@@ -750,6 +750,22 @@ p {
   border-radius: 5px;
   text-align: left;
 }
+.files-app > .app-sidebar {
+  overflow-y: auto;
+}
+.files-app > .app-sidebar > button,
+.files-app > .app-sidebar > .sidebar-divider {
+  flex-shrink: 0;
+}
+.app-sidebar > button svg {
+  flex-shrink: 0;
+}
+.sidebar-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .app-sidebar > button:hover {
   background: var(--accent-soft);
 }

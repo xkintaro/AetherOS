@@ -144,26 +144,27 @@ export function FileItem({
   );
 }
 
-export function FolderShortcut({
+export function FileShortcut({
   id,
   current,
-  onNavigate,
+  onOpen,
 }: {
   id: string;
   current: string;
-  onNavigate: (id: string) => void;
+  onOpen: (file: VFile) => void;
 }) {
   const file = useOS((state) => state.files.find((file) => file.id === id));
-  const drop = useFileDrop(id);
+  const drop = useFileDrop(file?.kind === "folder" ? id : null);
   if (!file) return null;
   return (
     <button
       className={`${id === current ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
-      onClick={() => onNavigate(id)}
+      title={file.name}
+      onClick={() => onOpen(file)}
       {...drop.handlers}
     >
       <FileIcon file={file} size={17} />
-      {file.name}
+      <span className="sidebar-file-name">{file.name}</span>
     </button>
   );
 }

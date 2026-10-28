@@ -27,7 +27,7 @@ import {
   DOCUMENTS_ID,
   DOWNLOADS_ID,
 } from "@/lib/filesystem";
-import { FileItem, FolderShortcut } from "../file-item";
+import { FileItem, FileShortcut } from "../file-item";
 import { FileContextMenu } from "../file-context-menu";
 import { useFileRename } from "../use-file-rename";
 import { useFileDrop } from "../file-drag";
@@ -54,6 +54,15 @@ export default function Files({ win }: { win: WindowState }) {
   const entries = folderEntries.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
+  const systemFolders = [DESKTOP_ID, DOCUMENTS_ID, DOWNLOADS_ID];
+  const sidebarEntries = [
+    ...systemFolders.flatMap((id) =>
+      files.filter((file) => file.id === id && isAvailable(files, id)),
+    ),
+    ...childrenOf(files, ROOT_ID).filter(
+      (file) => !systemFolders.includes(file.id),
+    ),
+  ];
   const selectedFile = entries.find((f) => f.id === selected);
   const drop = useFileDrop(trash ? null : folder);
   function navigate(id: string) {
@@ -164,18 +173,11 @@ export default function Files({ win }: { win: WindowState }) {
       }}
     >
       <aside className="app-sidebar">
-        {[DESKTOP_ID, DOCUMENTS_ID, DOWNLOADS_ID]
-          .filter((id) => isAvailable(files, id))
-          .map((id) => (
-            <FolderShortcut
-              key={id}
-              id={id}
-              current={folder}
-              onNavigate={navigate}
-            />
-          ))}
+        {sidebarEntries.map((file) => (
+          <FileShortcut key={file.id} id={file.id} current={folder} onOpen={openFile} />
+        ))}
         <div className="sidebar-divider" />
-        <FolderShortcut id={ROOT_ID} current={folder} onNavigate={navigate} />
+        <FileShortcut id={ROOT_ID} current={folder} onOpen={openFile} />
         <button
           className={trash ? "selected" : ""}
           onClick={() => navigate("trash")}
