@@ -312,7 +312,7 @@ export default function Files({ win }: { win: WindowState }) {
         <div className="files-status">
           <span title={trash ? "trash" : filePath(files, folder)}>
             {entries.length} items
-            {selectedFile ? " Â· " + selectedFile.name : ""}
+            {selectedFile ? " · " + selectedFile.name : ""}
           </span>
           <div>
             {selectedFile &&
