@@ -13,7 +13,9 @@ import {
   isAvailable,
   isProtected,
   hasNameConflict,
-  moveEntry,
+  moveEntries,
+  selectionRoots,
+  ancestors,
   parseBackup,
   ROOT_ID,
   type VFile,
@@ -44,7 +46,18 @@ type State = {
   notices: Notice[];
   unsupportedFile: string | null;
   cutFileId: string | null;
+  cutFileIds: string[];
   draggedFileId: string | null;
+  draggedFileIds: string[];
+  setDraggedFiles: (ids: string[]) => void;
+  cutFiles: (ids: string[]) => void;
+  moveFiles: (
+    ids: string[],
+    parent: string,
+    positions?: Record<string, Position>,
+  ) => FileResult;
+  trashFiles: (ids: string[]) => void;
+  restoreFiles: (ids: string[]) => void;
   setDraggedFile: (id: string | null) => void;
   cutFile: (id: string | null) => void;
   moveFile: (id: string, parent: string, position?: Position) => FileResult;
@@ -96,22 +109,52 @@ export const useOS = create<State>()(
       notices: [],
       unsupportedFile: null,
       cutFileId: null,
+      cutFileIds: [],
       draggedFileId: null,
-      setDraggedFile: (draggedFileId) => set({ draggedFileId }),
-      cutFile: (cutFileId) => set({ cutFileId }),
-      moveFile: (id, parent, position) => {
-        const next = moveEntry(get().files, id, parent, position);
-        if (next.result.ok)
+      draggedFileIds: [],
+      setDraggedFile: (id) => get().setDraggedFiles(id ? [id] : []),
+      setDraggedFiles: (ids) =>
+        set({
+          draggedFileIds: [...new Set(ids)],
+          draggedFileId: ids[0] ?? null,
+        }),
+      cutFile: (id) => get().cutFiles(id ? [id] : []),
+      cutFiles: (ids) => {
+        const state = get();
+        const eligible = selectionRoots(
+          state.files,
+          ids.filter((id) => !isProtected(id) && isAvailable(state.files, id)),
+        );
+        set({ cutFileIds: eligible, cutFileId: eligible[0] ?? null });
+      },
+      moveFile: (id, parent, position) =>
+        get().moveFiles(
+          [id],
+          parent,
+          position ? { [id]: position } : undefined,
+        ),
+      moveFiles: (ids, parent, positions) => {
+        const state = get();
+        const next = moveEntries(state.files, ids, parent, positions);
+        if (next.result.ok) {
+          const cutFileIds = state.cutFileIds.filter((id) => !ids.includes(id));
           set({
             files: next.files,
-            cutFileId: get().cutFileId === id ? null : get().cutFileId,
+            cutFileIds,
+            cutFileId: cutFileIds[0] ?? null,
           });
+        }
         return next.result;
       },
       pasteFile: (parent) => {
-        const id = get().cutFileId;
-        return id
-          ? get().moveFile(id, parent)
+        const state = get();
+        const ids = state.cutFileIds.length
+          ? state.cutFileIds
+          : state.cutFileId
+            ? [state.cutFileId]
+            : [];
+        return ids.length
+          ? state.moveFiles(ids, parent)
           : { ok: false, error: "Cut an item first." };
       },
       openApp: (app, fileId) => {
@@ -355,32 +398,55 @@ export const useOS = create<State>()(
         });
         return true;
       },
-      trashFile: (id) => {
-        if (isProtected(id)) return;
-        set((s) => ({
-          files: s.files.map((f) =>
-            f.id === id ? { ...f, trashed: true } : f,
+      trashFile: (id) => get().trashFiles([id]),
+      trashFiles: (ids) => {
+        const state = get();
+        const eligible = new Set(
+          selectionRoots(
+            state.files,
+            ids.filter(
+              (id) => !isProtected(id) && isAvailable(state.files, id),
+            ),
           ),
-          cutFileId: s.cutFileId === id ? null : s.cutFileId,
-        }));
-      },
-      restoreFile: (id) => {
-        const s = get();
-        const f = s.files.find((f) => f.id === id);
-        if (!f) return;
-        if (!f.parent || !isAvailable(s.files, f.parent)) {
-          s.notify("Cannot restore", "Restore the parent folder first.");
-          return;
-        }
-        if (hasNameConflict(s.files, f.parent, f.name, id)) {
-          s.notify("Cannot restore", "An item with this name already exists.");
-          return;
-        }
+        );
+        const cutFileIds = state.cutFileIds.filter(
+          (id) =>
+            !ancestors(state.files, id).some((file) => eligible.has(file.id)),
+        );
         set({
-          files: s.files.map((x) =>
-            x.id === id ? { ...x, trashed: false } : x,
+          files: state.files.map((file) =>
+            eligible.has(file.id) ? { ...file, trashed: true } : file,
           ),
+          cutFileIds,
+          cutFileId: cutFileIds[0] ?? null,
         });
+      },
+      restoreFile: (id) => get().restoreFiles([id]),
+      restoreFiles: (ids) => {
+        const state = get();
+        let files = state.files;
+        const ordered = [...new Set(ids)].sort(
+          (a, b) => ancestors(files, a).length - ancestors(files, b).length,
+        );
+        for (const id of ordered) {
+          const file = files.find((entry) => entry.id === id);
+          if (!file?.trashed) continue;
+          if (!file.parent || !isAvailable(files, file.parent)) {
+            state.notify("Cannot restore", "Restore the parent folder first.");
+            return;
+          }
+          if (hasNameConflict(files, file.parent, file.name, id)) {
+            state.notify(
+              "Cannot restore",
+              "An item with this name already exists.",
+            );
+            return;
+          }
+          files = files.map((entry) =>
+            entry.id === id ? { ...entry, trashed: false } : entry,
+          );
+        }
+        set({ files });
       },
       notify: (title, message) =>
         set((s) => ({
@@ -399,7 +465,9 @@ export const useOS = create<State>()(
           windows: [],
           activeId: null,
           cutFileId: null,
+          cutFileIds: [],
           draggedFileId: null,
+          draggedFileIds: [],
         });
         get().notify("Backup restored", files.length + " items restored.");
         return true;

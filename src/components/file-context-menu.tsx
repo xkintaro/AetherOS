@@ -19,6 +19,7 @@ type Props = {
   x: number;
   y: number;
   hasSelection: boolean;
+  multiple?: boolean;
   canPaste: boolean;
   protectedItem?: boolean;
   trashed?: boolean;
@@ -38,6 +39,7 @@ export function FileContextMenu({
   x,
   y,
   hasSelection,
+  multiple = false,
   canPaste,
   protectedItem = false,
   trashed = false,
@@ -157,7 +159,7 @@ export function FileContextMenu({
           </button>
         ) : hasSelection ? (
           <>
-            {onOpen && (
+            {onOpen && !multiple && (
               <button role="menuitem" onClick={onOpen}>
                 <ArrowUpRight size={15} />
                 <span>Open</span>
@@ -172,11 +174,13 @@ export function FileContextMenu({
                   <span>Cut</span>
                   <kbd>Ctrl+X</kbd>
                 </button>
-                <button role="menuitem" onClick={onRename}>
-                  <Pencil size={15} />
-                  <span>Rename</span>
-                  <kbd>F2</kbd>
-                </button>
+                {!multiple && (
+                  <button role="menuitem" onClick={onRename}>
+                    <Pencil size={15} />
+                    <span>Rename</span>
+                    <kbd>F2</kbd>
+                  </button>
+                )}
                 <div className="desktop-menu-separator" role="separator" />
                 <button role="menuitem" onClick={onTrash}>
                   <Trash2 size={15} />

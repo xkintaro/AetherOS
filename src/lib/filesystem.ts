@@ -220,6 +220,35 @@ export function moveEntry(
     result: { ok: true },
   };
 }
+/** Treat a selected folder and its descendants as a single operation. */
+export function selectionRoots(files: VFile[], ids: string[]): string[] {
+  const selected = new Set(ids);
+  return [...selected].filter(
+    (id) =>
+      !ancestors(files, id).some(
+        (file) => file.id !== id && selected.has(file.id),
+      ),
+  );
+}
+
+/** Validate the entire move before committing any file changes. */
+export function moveEntries(
+  files: VFile[],
+  ids: string[],
+  parent: string,
+  positions: Record<string, Position> = {},
+): { files: VFile[]; result: FileResult } {
+  if (!ids.length)
+    return { files, result: { ok: false, error: "Select an item first." } };
+  let next = files;
+  for (const id of selectionRoots(files, ids)) {
+    const moved = moveEntry(next, id, parent, positions[id]);
+    if (!moved.result.ok) return { files, result: moved.result };
+    next = moved.files;
+  }
+  return { files: next, result: { ok: true } };
+}
+
 /** Flatten legacy drive/user wrappers without changing user item IDs or contents. */
 export function migrateFiles(files: VFile[]): VFile[] {
   if (files.some((file) => file.id === ROOT_ID))

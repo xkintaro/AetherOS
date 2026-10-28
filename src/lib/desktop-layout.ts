@@ -103,3 +103,40 @@ export function desktopDropPosition(
   }
   return closest;
 }
+
+/** Place a dragged group on the grid, keeping relative positions where possible. */
+export function desktopGroupPositions(
+  files: VFile[],
+  ids: string[],
+  anchor: string,
+  point: Position,
+  height: number,
+  width: number,
+): Record<string, Position> {
+  const source = desktopLayout(files, height, width);
+  const origin = source.get(anchor);
+  let working = files.filter((file) => !ids.includes(file.id));
+  const result: Record<string, Position> = {};
+  for (const [index, id] of ids.entries()) {
+    const prior = source.get(id);
+    const desired =
+      origin && prior
+        ? { x: point.x + prior.x - origin.x, y: point.y + prior.y - origin.y }
+        : { x: point.x, y: point.y + index * CELL };
+    const position = desktopDropPosition(working, id, desired, height, width);
+    result[id] = position;
+    working = [
+      ...working,
+      {
+        id,
+        name: id,
+        kind: "text",
+        content: "",
+        modified: 0,
+        parent: "desktop",
+        desktopPosition: position,
+      },
+    ];
+  }
+  return result;
+}

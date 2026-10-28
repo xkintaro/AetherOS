@@ -914,6 +914,9 @@ p {
   color: var(--muted);
 }
 .file-entries {
+  position: relative;
+  min-height: 0;
+  outline: none;
   flex: 1;
   overflow: auto;
   padding: 12px 20px;
@@ -1765,4 +1768,17 @@ select {
 }
 .file-format-actions .small-button {
   min-width: 72px;
+}
+
+.file-selection-box {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  border: 1px solid #60a5fac0;
+  background: #3b82f629;
+  border-radius: 2px;
+}
+.desktop-files,
+.file-entries {
+  user-select: none;
 }

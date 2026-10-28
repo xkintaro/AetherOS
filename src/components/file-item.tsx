@@ -8,6 +8,8 @@ import { endFileDrag, startFileDrag, useFileDrop } from "./file-drag";
 export function FileItem({
   file,
   selected,
+  selectedIds = [],
+  onDragSelection,
   view = "grid",
   trashed = false,
   onSelect,
@@ -18,9 +20,11 @@ export function FileItem({
 }: {
   file: VFile;
   selected: boolean;
+  selectedIds?: string[];
+  onDragSelection?: () => void;
   view?: "grid" | "list" | "desktop";
   trashed?: boolean;
-  onSelect: () => void;
+  onSelect: (event: React.MouseEvent) => void;
   onOpen: () => void;
   onContextMenu?: (event: React.MouseEvent) => void;
   style?: React.CSSProperties;
@@ -47,7 +51,7 @@ export function FileItem({
     wasRenaming.current = renaming;
   }, [renaming, file.kind]);
   const files = useOS((state) => state.files);
-  const cut = useOS((state) => state.cutFileId === file.id);
+  const cut = useOS((state) => state.cutFileIds.includes(file.id));
   const drop = useFileDrop(!trashed && file.kind === "folder" ? file.id : null);
   const small = view === "list";
   const Container = rename ? "div" : "button";
@@ -56,18 +60,23 @@ export function FileItem({
       ref={(node: HTMLButtonElement | HTMLDivElement | null) => {
         itemButton.current = node instanceof HTMLButtonElement ? node : null;
       }}
+      data-file-id={file.id}
+      data-name-expanded={selected && selectedIds.length <= 1}
       style={style}
       className={`file-entry ${selected ? "file-selected" : ""} ${drop.highlighted ? "file-drop-target" : ""} ${cut ? "file-cut" : ""} ${rename ? "file-renaming" : ""}`}
       aria-label={file.name}
       title={isProtected(file.id) ? `${file.name} (System folder)` : file.name}
       aria-pressed={rename ? undefined : selected}
       draggable={!rename && !trashed && !isProtected(file.id)}
-      onDragStart={(event) => startFileDrag(event, file)}
+      onDragStart={(event) => {
+        if (!selected) onDragSelection?.();
+        startFileDrag(event, file, selectedIds);
+      }}
       onDragEnd={endFileDrag}
       {...drop.handlers}
       onClick={(event) => {
         event.stopPropagation();
-        if (!rename) onSelect();
+        if (!rename) onSelect(event);
       }}
       onDoubleClick={() => {
         if (!rename && !trashed) onOpen();

@@ -5,22 +5,26 @@ import {
   childrenOf,
   DESKTOP_ID,
   isProtected,
-  moveError,
+  moveEntries,
   nextAvailableName,
   type VFile,
 } from "@/lib/filesystem";
-import { desktopDropPosition, desktopLayout } from "@/lib/desktop-layout";
+import {
+  desktopDropPosition,
+  desktopLayout,
+  desktopGroupPositions,
+} from "@/lib/desktop-layout";
 import { FileItem } from "./file-item";
 import { FileContextMenu } from "./file-context-menu";
 import { useFileRename } from "./use-file-rename";
-import { endFileDrag, FILE_DRAG_TYPE } from "./file-drag";
+import { useFileSelection } from "./use-file-selection";
+import { endFileDrag, FILE_DRAG_TYPE, draggedFileIds } from "./file-drag";
 
 export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
   const files = useOS((s) => s.files),
     cutId = useOS((s) => s.cutFileId),
     dragged = useOS((s) => s.draggedFileId);
-  const [selected, setSelected] = useState<string | null>(null),
-    [hovered, setHovered] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [menu, setMenu] = useState<{
     x: number;
     y: number;
@@ -30,8 +34,12 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
   const [area, setArea] = useState<{ width: number; height: number } | null>(
     null,
   );
-  const entries = childrenOf(files, DESKTOP_ID),
-    selectedFile = entries.find((f) => f.id === selected);
+  const entries = childrenOf(files, DESKTOP_ID);
+  const selection = useFileSelection("desktop", entries);
+  const selectedFile = selection.single;
+  const movable = selection.selectedFiles
+    .filter((file) => !isProtected(file.id))
+    .map((file) => file.id);
   const positions = desktopLayout(
     entries,
     area?.height ?? 640,
@@ -89,7 +97,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     event.preventDefault();
     event.stopPropagation();
     onInteract();
-    setSelected(file?.id ?? null);
+    selection.context(file?.id);
     const desktop = event.currentTarget.closest<HTMLElement>(".desktop-files")!;
     const rect = desktop.getBoundingClientRect();
     setMenu({
@@ -103,7 +111,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
   }
   function beginRename(file: VFile) {
     setMenu(null);
-    setSelected(file.id);
+    selection.set([file.id]);
     editName(file);
   }
   function createItem(kind: VFile["kind"]) {
@@ -120,7 +128,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     }
     if (menu) state.moveFile(id, DESKTOP_ID, placement(id, menu.origin));
     setMenu(null);
-    setSelected(id);
+    selection.set([id]);
     editName(useOS.getState().files.find((file) => file.id === id)!);
   }
   return (
@@ -128,20 +136,23 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
       className={`desktop-underlay desktop-files ${hovered && dragged ? "desktop-drop-target" : ""}`}
       tabIndex={0}
       aria-label="Desktop files"
-      onPointerDown={onInteract}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          setSelected(null);
-          setMenu(null);
-          event.currentTarget.focus();
-        }
+      ref={selection.ref}
+      {...selection.handlers}
+      onPointerDown={(event) => {
+        onInteract();
+        setMenu(null);
+        selection.handlers.onPointerDown(event);
       }}
       onContextMenu={(event) => context(event)}
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes(FILE_DRAG_TYPE)) return;
         event.preventDefault();
         event.dataTransfer.dropEffect =
-          dragged && !moveError(files, dragged, DESKTOP_ID) ? "move" : "none";
+          dragged &&
+          moveEntries(files, useOS.getState().draggedFileIds, DESKTOP_ID).result
+            .ok
+            ? "move"
+            : "none";
         setHovered(true);
       }}
       onDragLeave={(event) => {
@@ -156,16 +167,24 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
         event.preventDefault();
         event.stopPropagation();
         setHovered(false);
-        const id = event.dataTransfer.getData(FILE_DRAG_TYPE);
+        const ids = draggedFileIds(event);
         const rect = event.currentTarget.getBoundingClientRect();
-        if (id) {
-          const position = placement(id, {
+        if (ids.length) {
+          const point = {
             x: event.clientX - rect.left + event.currentTarget.scrollLeft - 40,
             y: event.clientY - rect.top + event.currentTarget.scrollTop - 40,
-          });
-          const result = useOS.getState().moveFile(id, DESKTOP_ID, position);
+          };
+          const group = desktopGroupPositions(
+            childrenOf(useOS.getState().files, DESKTOP_ID),
+            ids,
+            ids[0],
+            point,
+            area?.height ?? 640,
+            area?.width ?? 1024,
+          );
+          const result = useOS.getState().moveFiles(ids, DESKTOP_ID, group);
           if (!result.ok) useOS.getState().notify("Cannot move", result.error);
-          else setSelected(id);
+          else selection.set(ids);
         }
         endFileDrag();
       }}
@@ -174,11 +193,18 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
           return;
         if (
           (event.ctrlKey || event.metaKey) &&
-          event.key.toLowerCase() === "x" &&
-          selectedFile
+          event.key.toLowerCase() === "a"
         ) {
           event.preventDefault();
-          useOS.getState().cutFile(selectedFile.id);
+          selection.set(entries.map((file) => file.id));
+        }
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          event.key.toLowerCase() === "x" &&
+          movable.length
+        ) {
+          event.preventDefault();
+          useOS.getState().cutFiles(movable);
         }
         if (
           (event.ctrlKey || event.metaKey) &&
@@ -192,14 +218,14 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
           event.preventDefault();
           beginRename(selectedFile);
         }
-        if (event.key === "Delete" && selectedFile) {
+        if (event.key === "Delete" && movable.length) {
           event.preventDefault();
-          useOS.getState().trashFile(selectedFile.id);
-          setSelected(null);
+          useOS.getState().trashFiles(movable);
+          selection.clear();
         }
         if (event.key === "Escape") {
           setMenu(null);
-          setSelected(null);
+          selection.clear();
         }
       }}
     >
@@ -207,15 +233,17 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
         <FileItem
           key={file.id}
           file={file}
-          selected={selected === file.id}
+          selected={selection.selected.has(file.id)}
+          selectedIds={selection.ids}
+          onDragSelection={() => selection.set([file.id])}
           view="desktop"
           rename={renameProps(file)}
           style={{
             left: positions.get(file.id)?.x,
             top: positions.get(file.id)?.y,
           }}
-          onSelect={() => {
-            setSelected(file.id);
+          onSelect={(event) => {
+            selection.select(file.id, event);
             setMenu(null);
           }}
           onOpen={() =>
@@ -226,13 +254,26 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
           onContextMenu={(event) => context(event, file)}
         />
       ))}
+      {selection.box && (
+        <div
+          className="file-selection-box"
+          aria-hidden="true"
+          style={{
+            left: selection.box.x,
+            top: selection.box.y,
+            width: selection.box.width,
+            height: selection.box.height,
+          }}
+        />
+      )}
       {menu && (
         <>
           <FileContextMenu
             x={menu.x}
             y={menu.y}
-            hasSelection={Boolean(selectedFile)}
-            protectedItem={selectedFile ? isProtected(selectedFile.id) : false}
+            hasSelection={selection.ids.length > 0}
+            multiple={selection.ids.length > 1}
+            protectedItem={!movable.length}
             label="Desktop menu"
             onOpen={() => {
               if (selectedFile)
@@ -247,15 +288,15 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
             canPaste={Boolean(cutId)}
             onCreate={createItem}
             onCut={() => {
-              if (selectedFile) useOS.getState().cutFile(selectedFile.id);
+              useOS.getState().cutFiles(movable);
               setMenu(null);
             }}
             onRename={() => {
               if (selectedFile) beginRename(selectedFile);
             }}
             onTrash={() => {
-              if (selectedFile) useOS.getState().trashFile(selectedFile.id);
-              setSelected(null);
+              useOS.getState().trashFiles(movable);
+              selection.clear();
               setMenu(null);
             }}
             onPaste={paste}

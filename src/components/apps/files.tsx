@@ -29,6 +29,7 @@ import {
 import { FileItem, FileShortcut } from "../file-item";
 import { FileContextMenu } from "../file-context-menu";
 import { useFileRename } from "../use-file-rename";
+import { useFileSelection } from "../use-file-selection";
 import { useFileDrop } from "../file-drag";
 
 export default function Files({ win }: { win: WindowState }) {
@@ -36,8 +37,7 @@ export default function Files({ win }: { win: WindowState }) {
     open = useOS((s) => s.openApp),
     cutId = useOS((s) => s.cutFileId);
   const folder = win.folderId ?? win.fileId ?? ROOT_ID;
-  const [query, setQuery] = useState(""),
-    [selected, setSelected] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [menu, setMenu] = useState<{
     x: number;
@@ -66,10 +66,23 @@ export default function Files({ win }: { win: WindowState }) {
   const entries = folderEntries.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
-  const selectedFile = entries.find((f) => f.id === selected);
+  const selection = useFileSelection(`${folder}:${query}`, entries);
+  const selectedFile = selection.single;
+  const movable = selection.selectedFiles
+    .filter((file) => !isProtected(file.id))
+    .map((file) => file.id);
   const menuFile = files.find((file) => file.id === menu?.fileId);
   const menuTrashed = Boolean(menuFile?.trashed);
+  const menuTargets = menu?.sidebar
+    ? menuFile
+      ? [menuFile]
+      : []
+    : selection.selectedFiles;
+  const menuMovable = menuTargets
+    .filter((file) => !isProtected(file.id))
+    .map((file) => file.id);
   const drop = useFileDrop(trash ? null : folder);
+  const trashDrop = useFileDrop("trash");
   function navigate(id: string) {
     setMenu(null);
     cancelRename();
@@ -80,7 +93,7 @@ export default function Files({ win }: { win: WindowState }) {
           ? "trash"
           : (files.find((f) => f.id === id)?.name ?? "Files"),
     });
-    setSelected(null);
+    selection.clear();
     setQuery("");
   }
   function paste() {
@@ -96,7 +109,18 @@ export default function Files({ win }: { win: WindowState }) {
       setMenu(null);
       return;
     }
-    setSelected(file?.id ?? null);
+    selection.context(sidebar ? undefined : file?.id);
+    if (
+      !sidebar &&
+      file &&
+      selection.selected.has(file.id) &&
+      selection.ids.length > 1 &&
+      !movable.length &&
+      !cutId
+    ) {
+      setMenu(null);
+      return;
+    }
     setMenu({ x: event.clientX, y: event.clientY, fileId: file?.id, sidebar });
   }
   function openFile(file: VFile) {
@@ -118,7 +142,7 @@ export default function Files({ win }: { win: WindowState }) {
     }
     setMenu(null);
     setQuery("");
-    setSelected(id);
+    selection.set([id]);
     beginRename(useOS.getState().files.find((file) => file.id === id)!);
   }
   useEffect(() => {
@@ -139,12 +163,11 @@ export default function Files({ win }: { win: WindowState }) {
         if (
           (event.ctrlKey || event.metaKey) &&
           event.key.toLowerCase() === "x" &&
-          selectedFile &&
-          !trash &&
-          !isProtected(selectedFile.id)
+          movable.length &&
+          !trash
         ) {
           event.preventDefault();
-          useOS.getState().cutFile(selectedFile.id);
+          useOS.getState().cutFiles(movable);
         }
         if (
           (event.ctrlKey || event.metaKey) &&
@@ -165,16 +188,21 @@ export default function Files({ win }: { win: WindowState }) {
           beginRename(selectedFile);
         }
         if (
-          event.key === "Delete" &&
-          selectedFile &&
-          !trash &&
-          !isProtected(selectedFile.id)
+          (event.ctrlKey || event.metaKey) &&
+          event.key.toLowerCase() === "a"
         ) {
           event.preventDefault();
-          useOS.getState().trashFile(selectedFile.id);
-          setSelected(null);
+          selection.set(entries.map((file) => file.id));
         }
-        if (event.key === "Escape") setMenu(null);
+        if (event.key === "Delete" && movable.length && !trash) {
+          event.preventDefault();
+          useOS.getState().trashFiles(movable);
+          selection.clear();
+        }
+        if (event.key === "Escape") {
+          setMenu(null);
+          selection.clear();
+        }
       }}
     >
       <aside className="app-sidebar">
@@ -183,9 +211,9 @@ export default function Files({ win }: { win: WindowState }) {
             key={file.id}
             id={file.id}
             current={folder}
-            selected={selected === file.id}
+            selected={selection.selected.has(file.id)}
             onSelect={(file) => {
-              setSelected(file.id);
+              selection.set([file.id]);
               setMenu(null);
             }}
             onOpen={openFile}
@@ -196,16 +224,17 @@ export default function Files({ win }: { win: WindowState }) {
         <FileShortcut
           id={ROOT_ID}
           current={folder}
-          selected={selected === ROOT_ID}
+          selected={selection.selected.has(ROOT_ID)}
           onSelect={(file) => {
-            setSelected(file.id);
+            selection.set([file.id]);
             setMenu(null);
           }}
           onOpen={openFile}
           onContextMenu={(event, file) => context(event, file, true)}
         />
         <button
-          className={trash ? "selected" : ""}
+          className={`${trash ? "selected" : ""} ${trashDrop.highlighted ? "file-drop-target" : ""}`}
+          {...trashDrop.handlers}
           onClick={() => navigate("trash")}
           onContextMenu={(event) => {
             event.preventDefault();
@@ -286,18 +315,23 @@ export default function Files({ win }: { win: WindowState }) {
         <div
           className={`file-entries ${view} ${drop.highlighted ? "file-drop-target" : ""}`}
           {...drop.handlers}
-          onClick={() => setSelected(null)}
+          ref={selection.ref}
+          tabIndex={0}
+          aria-label="Files in current folder"
+          {...selection.handlers}
         >
           {entries.map((file) => (
             <FileItem
               key={file.id}
               file={file}
-              selected={selected === file.id}
+              selected={selection.selected.has(file.id)}
+              selectedIds={selection.ids}
+              onDragSelection={() => selection.set([file.id])}
               view={view}
               trashed={trash}
               rename={renameProps(file)}
               onContextMenu={(event) => context(event, file)}
-              onSelect={() => setSelected(file.id)}
+              onSelect={(event) => selection.select(file.id, event)}
               onOpen={() =>
                 file.kind === "folder"
                   ? navigate(file.id)
@@ -305,6 +339,18 @@ export default function Files({ win }: { win: WindowState }) {
               }
             />
           ))}
+          {selection.box && (
+            <div
+              className="file-selection-box"
+              aria-hidden="true"
+              style={{
+                left: selection.box.x,
+                top: selection.box.y,
+                width: selection.box.width,
+                height: selection.box.height,
+              }}
+            />
+          )}
           {!entries.length && (
             <div className="empty-state">
               <FolderClosed size={36} strokeWidth={1} />
@@ -315,39 +361,46 @@ export default function Files({ win }: { win: WindowState }) {
         <div className="files-status">
           <span title={trash ? "trash" : filePath(files, folder)}>
             {entries.length} items
-            {selectedFile ? " · " + selectedFile.name : ""}
+            {selection.ids.length > 1
+              ? ` · ${selection.ids.length} selected`
+              : selectedFile
+                ? " · " + selectedFile.name
+                : ""}
           </span>
           <div>
-            {selectedFile &&
+            {selection.ids.length > 0 &&
               (trash ? (
                 <button
-                  onClick={() => useOS.getState().restoreFile(selectedFile.id)}
+                  onClick={() => {
+                    useOS.getState().restoreFiles(selection.ids);
+                    selection.clear();
+                  }}
                 >
                   Restore
                 </button>
               ) : (
-                !isProtected(selectedFile.id) && (
+                movable.length > 0 && (
                   <>
                     <button
-                      aria-label="Cut selected item"
+                      aria-label="Cut selected items"
                       title="Cut (Ctrl+X)"
-                      onClick={() => useOS.getState().cutFile(selectedFile.id)}
+                      onClick={() => useOS.getState().cutFiles(movable)}
                     >
                       <Scissors size={14} />
                     </button>
+                    {selectedFile && !isProtected(selectedFile.id) && (
+                      <button
+                        aria-label="Rename selected item"
+                        onClick={() => beginRename(selectedFile)}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
                     <button
-                      aria-label="Rename selected item"
+                      aria-label="Move selected items to Trash"
                       onClick={() => {
-                        if (selectedFile) beginRename(selectedFile);
-                      }}
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      aria-label="Move selected item to Trash"
-                      onClick={() => {
-                        useOS.getState().trashFile(selectedFile.id);
-                        setSelected(null);
+                        useOS.getState().trashFiles(movable);
+                        selection.clear();
                       }}
                     >
                       <Trash2 size={14} />
@@ -362,10 +415,11 @@ export default function Files({ win }: { win: WindowState }) {
         <FileContextMenu
           x={menu.x}
           y={menu.y}
-          hasSelection={Boolean(menuFile) || menu.fileId === "trash"}
+          hasSelection={menuTargets.length > 0 || menu.fileId === "trash"}
+          multiple={menuTargets.length > 1}
           protectedItem={
             menu.fileId === "trash" ||
-            (menuFile ? isProtected(menuFile.id) : false)
+            (menuTargets.length > 0 && !menuMovable.length)
           }
           trashed={menuTrashed}
           canPaste={
@@ -379,26 +433,27 @@ export default function Files({ win }: { win: WindowState }) {
             else if (menuFile) openFile(menuFile);
           }}
           onCut={() => {
-            if (menuFile) useOS.getState().cutFile(menuFile.id);
+            useOS.getState().cutFiles(menuMovable);
             setMenu(null);
           }}
           onRename={() => {
             if (menuFile) {
               if (menu.sidebar && menuFile.parent) {
                 navigate(menuFile.parent);
-                setSelected(menuFile.id);
+                selection.set([menuFile.id]);
               }
               beginRename(menuFile);
             }
             setMenu(null);
           }}
           onTrash={() => {
-            if (menuFile) useOS.getState().trashFile(menuFile.id);
-            setSelected(null);
+            useOS.getState().trashFiles(menuMovable);
+            selection.clear();
             setMenu(null);
           }}
           onRestore={() => {
-            if (menuFile) useOS.getState().restoreFile(menuFile.id);
+            useOS.getState().restoreFiles(menuTargets.map((file) => file.id));
+            selection.clear();
             setMenu(null);
           }}
           onPaste={() => {
