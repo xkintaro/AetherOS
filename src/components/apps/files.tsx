@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowUp,
   ChevronRight,
-  Plus,
   Search,
   LayoutGrid,
   List,
@@ -43,7 +42,6 @@ export default function Files({ win }: { win: WindowState }) {
   const [menu, setMenu] = useState<{
     x: number;
     y: number;
-    creationOnly?: boolean;
     fileId?: string;
     sidebar?: boolean;
   } | null>(null);
@@ -255,23 +253,6 @@ export default function Files({ win }: { win: WindowState }) {
           >
             {view === "grid" ? <List size={17} /> : <LayoutGrid size={17} />}
           </button>
-          {!trash && (
-            <button
-              className="small-button"
-              onClick={(event) => {
-                const rect = event.currentTarget.getBoundingClientRect();
-                setSelected(null);
-                setMenu(
-                  menu?.creationOnly
-                    ? null
-                    : { x: rect.left, y: rect.bottom + 4, creationOnly: true },
-                );
-              }}
-            >
-              <Plus size={15} />
-              New
-            </button>
-          )}
         </div>
         <div className="folder-heading">
           <h2>{trash ? "trash" : current?.name}</h2>
@@ -364,7 +345,6 @@ export default function Files({ win }: { win: WindowState }) {
       </section>
       {menu && (
         <FileContextMenu
-          creationOnly={menu.creationOnly}
           x={menu.x}
           y={menu.y}
           hasSelection={Boolean(menuFile) || menu.fileId === "trash"}
