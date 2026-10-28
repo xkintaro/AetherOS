@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { FolderClosed, FileText, FolderRoot } from "lucide-react";
-import { childrenOf, isProtected, ROOT_ID, type VFile } from "@/lib/filesystem";
+import { childrenOf, isProtected, type VFile } from "@/lib/filesystem";
+import { FileIcon } from "./file-icon";
 import { useOS } from "@/lib/store";
 import { endFileDrag, startFileDrag, useFileDrop } from "./file-drag";
 
@@ -49,12 +49,6 @@ export function FileItem({
   const files = useOS((state) => state.files);
   const cut = useOS((state) => state.cutFileId === file.id);
   const drop = useFileDrop(!trashed && file.kind === "folder" ? file.id : null);
-  const Icon =
-    file.id === ROOT_ID
-      ? FolderRoot
-      : file.kind === "folder"
-        ? FolderClosed
-        : FileText;
   const small = view === "list";
   const Container = rename ? "div" : "button";
   return (
@@ -65,7 +59,7 @@ export function FileItem({
       style={style}
       className={`file-entry ${selected ? "file-selected" : ""} ${drop.highlighted ? "file-drop-target" : ""} ${cut ? "file-cut" : ""} ${rename ? "file-renaming" : ""}`}
       aria-label={file.name}
-      title={file.name}
+      title={isProtected(file.id) ? `${file.name} (System folder)` : file.name}
       aria-pressed={rename ? undefined : selected}
       draggable={!rename && !trashed && !isProtected(file.id)}
       onDragStart={(event) => startFileDrag(event, file)}
@@ -89,7 +83,8 @@ export function FileItem({
       <span
         className={file.kind === "folder" ? "file-folder" : "file-document"}
       >
-        <Icon
+        <FileIcon
+          file={file}
           size={
             small
               ? 20
@@ -161,14 +156,13 @@ export function FolderShortcut({
   const file = useOS((state) => state.files.find((file) => file.id === id));
   const drop = useFileDrop(id);
   if (!file) return null;
-  const Icon = id === ROOT_ID ? FolderRoot : FolderClosed;
   return (
     <button
       className={`${id === current ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
       onClick={() => onNavigate(id)}
       {...drop.handlers}
     >
-      <Icon size={17} />
+      <FileIcon file={file} size={17} />
       {file.name}
     </button>
   );

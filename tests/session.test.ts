@@ -5,6 +5,8 @@ import {
   initialFiles,
   ROOT_ID,
   DOCUMENTS_ID,
+  DESKTOP_ID,
+  DOWNLOADS_ID,
   parseBackup,
 } from "../src/lib/filesystem";
 import { useOS } from "../src/lib/store";
@@ -177,4 +179,36 @@ test("storage quota failures do not interrupt actions or flood error notificatio
   storage.setItem("workspace", "d");
   await Promise.resolve();
   assert.equal(errors, 2);
+});
+
+test("system folders cannot be deleted, renamed or moved while their contents remain editable", () => {
+  const previous = useOS.getState();
+  useOS.setState({
+    files: structuredClone(initialFiles),
+    windows: [],
+    cutFileId: null,
+  });
+  try {
+    const state = useOS.getState();
+    for (const id of [DESKTOP_ID, DOCUMENTS_ID, DOWNLOADS_ID]) {
+      const original = useOS.getState().files.find((file) => file.id === id);
+      state.trashFile(id);
+      assert.equal(state.renameFile(id, "Changed"), false);
+      const destination = id === DOCUMENTS_ID ? DOWNLOADS_ID : DOCUMENTS_ID;
+      assert.equal(state.moveFile(id, destination).ok, false);
+      assert.deepEqual(
+        useOS.getState().files.find((file) => file.id === id),
+        original,
+      );
+      const child = state.createFile(id, "User note.txt", "text", "Hello");
+      assert.ok(child);
+      state.trashFile(child);
+      assert.equal(
+        useOS.getState().files.find((file) => file.id === child)?.trashed,
+        true,
+      );
+    }
+  } finally {
+    useOS.setState(previous);
+  }
 });

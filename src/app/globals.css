@@ -913,6 +913,9 @@ p {
   color: var(--folder);
   filter: drop-shadow(0 3px 4px #0002);
 }
+.system-folder-icon {
+  color: var(--accent-text);
+}
 .file-document {
   color: var(--text);
 }
