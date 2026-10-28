@@ -9,6 +9,7 @@ import {
   initialFiles,
   validName,
   isTextFileName,
+  openFileRenameMessage,
   isAvailable,
   isProtected,
   hasNameConflict,
@@ -306,15 +307,33 @@ export const useOS = create<State>()(
         });
         return id;
       },
-      saveFile: (id, content) =>
+      saveFile: (id, content) => {
+        const file = get().files.find((entry) => entry.id === id);
+        if (!file || file.kind !== "text") return;
+        if (!isTextFileName(file.name)) {
+          set({ unsupportedFile: file.name });
+          return;
+        }
         set((s) => ({
           files: s.files.map((f) =>
             f.id === id ? { ...f, content, modified: Date.now() } : f,
           ),
-        })),
+        }));
+      },
       renameFile: (id, name) => {
         const s = get();
         const f = s.files.find((f) => f.id === id);
+        if (
+          f?.kind === "text" &&
+          name !== f.name &&
+          !isTextFileName(name) &&
+          s.windows.some(
+            (window) => window.app === "editor" && window.fileId === id,
+          )
+        ) {
+          s.notify("File is open", openFileRenameMessage);
+          return false;
+        }
         if (
           !f ||
           isProtected(id) ||

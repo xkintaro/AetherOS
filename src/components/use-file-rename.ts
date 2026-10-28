@@ -4,6 +4,8 @@ import {
   hasNameConflict,
   isProtected,
   validName,
+  isTextFileName,
+  openFileRenameMessage,
   type VFile,
 } from "@/lib/filesystem";
 import { useOS } from "@/lib/store";
@@ -35,6 +37,15 @@ export function useFileRename() {
     const name = rename.value;
     let error = "";
     if (!validName(name)) error = "Invalid name.";
+    else if (
+      file.kind === "text" &&
+      name !== file.name &&
+      !isTextFileName(name) &&
+      state.windows.some(
+        (window) => window.app === "editor" && window.fileId === file.id,
+      )
+    )
+      error = openFileRenameMessage;
     else if (hasNameConflict(state.files, file.parent, name, file.id))
       error = "Name already exists.";
     else if (name !== file.name && !state.renameFile(file.id, name))

@@ -2,7 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import { FileText, Check, Save } from "lucide-react";
 import { useOS, type WindowState } from "@/lib/store";
-import { filePath, isAvailable, DOCUMENTS_ID, HOME_ID } from "@/lib/filesystem";
+import {
+  filePath,
+  isAvailable,
+  DOCUMENTS_ID,
+  HOME_ID,
+  isTextFileName,
+} from "@/lib/filesystem";
 
 export default function Editor({ win }: { win: WindowState }) {
   const file = useOS((s) => s.files.find((f) => f.id === win.fileId));
@@ -18,6 +24,7 @@ export default function Editor({ win }: { win: WindowState }) {
   const textArea = useRef<HTMLTextAreaElement>(null);
   const lineNumbers = useRef<HTMLDivElement>(null);
   const [externalChange, setExternalChange] = useState(false);
+  const unsupported = Boolean(file && !isTextFileName(file.name));
   const dirty = text !== (file?.content ?? "");
   useEffect(() => {
     if (!file || file.content === baseline.current) return;
@@ -30,6 +37,13 @@ export default function Editor({ win }: { win: WindowState }) {
     }
   }, [file?.content, text]);
   const save = () => {
+    const currentFile = useOS
+      .getState()
+      .files.find((entry) => entry.id === win.fileId);
+    if (currentFile && !isTextFileName(currentFile.name)) {
+      useOS.setState({ unsupportedFile: currentFile.name });
+      return;
+    }
     if (
       externalChange &&
       !window.confirm(
@@ -108,15 +122,17 @@ export default function Editor({ win }: { win: WindowState }) {
         )}
         <div className="toolbar-spacer" />
         <span className="muted">
-          {externalChange
-            ? "Changed in another app"
-            : dirty
-              ? "Unsaved changes"
-              : saved
-                ? "Saved"
-                : "All changes saved"}
+          {unsupported
+            ? "Rename this file to .txt to continue editing."
+            : externalChange
+              ? "Changed in another app"
+              : dirty
+                ? "Unsaved changes"
+                : saved
+                  ? "Saved"
+                  : "All changes saved"}
         </span>
-        <button className="small-button" onClick={save}>
+        <button className="small-button" onClick={save} disabled={unsupported}>
           {saved ? <Check size={14} /> : <Save size={14} />}Save
         </button>
       </div>
@@ -139,12 +155,16 @@ export default function Editor({ win }: { win: WindowState }) {
           spellCheck={false}
           aria-label="Document content"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          readOnly={unsupported}
+          onChange={(e) => {
+            if (!unsupported) setText(e.target.value);
+          }}
           onScroll={(event) => {
             if (lineNumbers.current)
               lineNumbers.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`;
           }}
           onKeyDown={(e) => {
+            if (unsupported) return;
             if (e.key === "Tab") {
               e.preventDefault();
               const target = e.currentTarget;

@@ -354,3 +354,58 @@ test("unsupported and extensionless files can be created and renamed but opening
     useOS.setState(previous);
   }
 });
+
+test("open documents cannot change to unsupported extensions, including minimized windows", () => {
+  const previous = useOS.getState();
+  useOS.setState({
+    files: structuredClone(initialFiles),
+    windows: [],
+    notices: [],
+  });
+  try {
+    const state = useOS.getState();
+    const id = state.createFile(
+      ROOT_ID,
+      "open.txt",
+      "text",
+      "Keep this content",
+    )!;
+    state.openApp("editor", id);
+    const editor = useOS
+      .getState()
+      .windows.find((window) => window.fileId === id)!;
+    for (const minimized of [false, true]) {
+      state.updateWindow(editor.id, { minimized, workspace: 1 });
+      for (const name of ["open.x", "open", "open.md"]) {
+        assert.equal(state.renameFile(id, name), false);
+        assert.equal(
+          useOS.getState().files.find((file) => file.id === id)?.name,
+          "open.txt",
+        );
+        assert.ok(
+          useOS.getState().windows.some((window) => window.id === editor.id),
+        );
+      }
+    }
+    assert.equal(state.renameFile(id, "renamed.TXT"), true);
+    state.close(editor.id);
+    assert.equal(state.renameFile(id, "renamed.x"), true);
+    state.saveFile(id, "Must not overwrite");
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === id)?.content,
+      "Keep this content",
+    );
+    assert.equal(useOS.getState().unsupportedFile, "renamed.x");
+    state.openApp("editor", id);
+    assert.equal(useOS.getState().windows.length, 0);
+    assert.equal(state.renameFile(id, "renamed.txt"), true);
+    state.openApp("editor", id);
+    state.saveFile(id, "Editing works again");
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === id)?.content,
+      "Editing works again",
+    );
+  } finally {
+    useOS.setState(previous);
+  }
+});

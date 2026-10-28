@@ -139,6 +139,9 @@ export function validName(name: string) {
     name.length <= 120
   );
 }
+export const openFileRenameMessage =
+  "Close this file in Text Editor before changing its extension.";
+
 export function isTextFileName(name: string): boolean {
   return name.length > 4 && /\.txt$/i.test(name);
 }
