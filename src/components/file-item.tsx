@@ -147,11 +147,15 @@ export function FileItem({
 export function FileShortcut({
   id,
   current,
+  selected,
+  onSelect,
   onOpen,
   onContextMenu,
 }: {
   id: string;
   current: string;
+  selected: boolean;
+  onSelect: (file: VFile) => void;
   onOpen: (file: VFile) => void;
   onContextMenu?: (event: React.MouseEvent, file: VFile) => void;
 }) {
@@ -160,9 +164,20 @@ export function FileShortcut({
   if (!file) return null;
   return (
     <button
-      className={`${id === current ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
+      className={`${(file.kind === "folder" ? id === current : selected) ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
       title={file.name}
-      onClick={() => onOpen(file)}
+      aria-pressed={file.kind === "text" ? selected : undefined}
+      onClick={() => (file.kind === "folder" ? onOpen(file) : onSelect(file))}
+      onDoubleClick={() => {
+        if (file.kind === "text") onOpen(file);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.stopPropagation();
+          onOpen(file);
+        }
+      }}
       onContextMenu={(event) => onContextMenu?.(event, file)}
       {...drop.handlers}
     >

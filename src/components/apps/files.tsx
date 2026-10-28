@@ -182,6 +182,11 @@ export default function Files({ win }: { win: WindowState }) {
             key={file.id}
             id={file.id}
             current={folder}
+            selected={selected === file.id}
+            onSelect={(file) => {
+              setSelected(file.id);
+              setMenu(null);
+            }}
             onOpen={openFile}
             onContextMenu={(event, file) => context(event, file, true)}
           />
@@ -190,6 +195,11 @@ export default function Files({ win }: { win: WindowState }) {
         <FileShortcut
           id={ROOT_ID}
           current={folder}
+          selected={selected === ROOT_ID}
+          onSelect={(file) => {
+            setSelected(file.id);
+            setMenu(null);
+          }}
           onOpen={openFile}
           onContextMenu={(event, file) => context(event, file, true)}
         />
