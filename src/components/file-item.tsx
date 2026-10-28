@@ -1,0 +1,175 @@
+"use client";
+import { useEffect, useRef } from "react";
+import { FolderClosed, FileText, FolderRoot } from "lucide-react";
+import { childrenOf, isProtected, ROOT_ID, type VFile } from "@/lib/filesystem";
+import { useOS } from "@/lib/store";
+import { endFileDrag, startFileDrag, useFileDrop } from "./file-drag";
+
+export function FileItem({
+  file,
+  selected,
+  view = "grid",
+  trashed = false,
+  onSelect,
+  onOpen,
+  onContextMenu,
+  style,
+  rename,
+}: {
+  file: VFile;
+  selected: boolean;
+  view?: "grid" | "list" | "desktop";
+  trashed?: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
+  onContextMenu?: (event: React.MouseEvent) => void;
+  style?: React.CSSProperties;
+  rename?: {
+    value: string;
+    error: string;
+    onChange: (value: string) => void;
+    onCommit: () => boolean;
+    onCancel: () => void;
+  };
+}) {
+  const nameInput = useRef<HTMLInputElement>(null);
+  const itemButton = useRef<HTMLButtonElement | null>(null);
+  const wasRenaming = useRef(false);
+  const renaming = Boolean(rename);
+  useEffect(() => {
+    if (renaming && nameInput.current) {
+      nameInput.current.focus();
+      const name = nameInput.current.value;
+      const dot = file.kind === "text" ? name.lastIndexOf(".") : -1;
+      nameInput.current.setSelectionRange(0, dot > 0 ? dot : name.length);
+    }
+    if (!renaming && wasRenaming.current) itemButton.current?.focus();
+    wasRenaming.current = renaming;
+  }, [renaming, file.kind]);
+  const files = useOS((state) => state.files);
+  const cut = useOS((state) => state.cutFileId === file.id);
+  const drop = useFileDrop(!trashed && file.kind === "folder" ? file.id : null);
+  const Icon =
+    file.id === ROOT_ID
+      ? FolderRoot
+      : file.kind === "folder"
+        ? FolderClosed
+        : FileText;
+  const small = view === "list";
+  const Container = rename ? "div" : "button";
+  return (
+    <Container
+      ref={(node: HTMLButtonElement | HTMLDivElement | null) => {
+        itemButton.current = node instanceof HTMLButtonElement ? node : null;
+      }}
+      style={style}
+      className={`file-entry ${selected ? "file-selected" : ""} ${drop.highlighted ? "file-drop-target" : ""} ${cut ? "file-cut" : ""} ${rename ? "file-renaming" : ""}`}
+      aria-label={file.name}
+      title={file.name}
+      aria-pressed={rename ? undefined : selected}
+      draggable={!rename && !trashed && !isProtected(file.id)}
+      onDragStart={(event) => startFileDrag(event, file)}
+      onDragEnd={endFileDrag}
+      {...drop.handlers}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!rename) onSelect();
+      }}
+      onDoubleClick={() => {
+        if (!rename && !trashed) onOpen();
+      }}
+      onKeyDown={(event) => {
+        if (!rename && event.key === "Enter" && !trashed) {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      onContextMenu={onContextMenu}
+    >
+      <span
+        className={file.kind === "folder" ? "file-folder" : "file-document"}
+      >
+        <Icon
+          size={
+            small
+              ? 20
+              : view === "desktop"
+                ? 38
+                : file.kind === "folder"
+                  ? 47
+                  : 40
+          }
+          strokeWidth={1.3}
+        />
+      </span>
+      {rename ? (
+        <>
+          <input
+            ref={nameInput}
+            className="desktop-name-input"
+            aria-label="Item name"
+            aria-invalid={Boolean(rename.error)}
+            value={rename.value}
+            onChange={(event) => rename.onChange(event.target.value)}
+            onPointerDown={(event) => event.stopPropagation()}
+            onBlur={() => {
+              if (!rename.onCommit())
+                requestAnimationFrame(() => nameInput.current?.focus());
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === "Enter") {
+                event.preventDefault();
+                rename.onCommit();
+              }
+              if (event.key === "Escape") {
+                event.preventDefault();
+                rename.onCancel();
+              }
+            }}
+          />
+          {rename.error && (
+            <span className="desktop-name-error" role="alert">
+              {rename.error}
+            </span>
+          )}
+        </>
+      ) : (
+        <span className="file-name">{file.name}</span>
+      )}
+      {!rename && view !== "desktop" && (
+        <small>
+          {file.kind === "folder"
+            ? `${childrenOf(files, file.id).length} items`
+            : `${new Blob([file.content]).size} bytes`}
+        </small>
+      )}
+    </Container>
+  );
+}
+
+export function FolderShortcut({
+  id,
+  current,
+  onNavigate,
+}: {
+  id: string;
+  current: string;
+  onNavigate: (id: string) => void;
+}) {
+  const file = useOS((state) => state.files.find((file) => file.id === id));
+  const drop = useFileDrop(id);
+  if (!file) return null;
+  const Icon = id === ROOT_ID ? FolderRoot : FolderClosed;
+  return (
+    <button
+      className={`${id === current ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
+      onClick={() => onNavigate(id)}
+      {...drop.handlers}
+    >
+      <Icon size={17} />
+      {file.name}
+    </button>
+  );
+}

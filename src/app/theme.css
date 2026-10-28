@@ -1,0 +1,44 @@
+/* Neutral surfaces belong to the mode; only interaction details use the accent. */
+:root {
+  color-scheme: dark;
+  --text: #ededf0;
+  --muted: #a5a5af;
+  --desktop: #19191d;
+  --surface: #242428;
+  --titlebar: #303034;
+  --sidebar: #202024;
+  --input: #1e1e22;
+  --panel: #2b2b30;
+  --chrome: #242428ed;
+  --border: #ffffff20;
+  --hover: #ffffff0b;
+  --scrim: #00000040;
+  --wallpaper-sheen: #ffffff08;
+  --folder: #d4b57f;
+  --danger: #ad363e;
+  --danger-text: #ffb4b8;
+  --accent: #8b9cf7;
+  --accent-text: #8b9cf7;
+  --on-accent: #18181b;
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent-text) 45%, var(--border));
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --text: #242429;
+  --muted: #60606b;
+  --desktop: #e3e3e9;
+  --surface: #fafafb;
+  --titlebar: #ececef;
+  --sidebar: #f1f1f4;
+  --input: #ffffff;
+  --panel: #fafafb;
+  --chrome: #f7f7faed;
+  --border: #20202a26;
+  --hover: #20202a08;
+  --scrim: #20202a18;
+  --wallpaper-sheen: #ffffff40;
+  --folder: #8b652b;
+  --danger-text: #a82532;
+}
