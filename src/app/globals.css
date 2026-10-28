@@ -774,8 +774,8 @@ p {
   color: var(--accent-text);
 }
 .app-sidebar > button.sidebar-item-selected {
-  background: color-mix(in srgb, var(--accent-soft) 50%, transparent);
-  color: var(--accent-text);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 .sidebar-divider {
   height: 1px;
