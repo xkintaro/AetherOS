@@ -3,8 +3,6 @@
 import { useRef, useState } from "react";
 import { Check, Image as ImageIcon, Upload, X } from "lucide-react";
 import { accentColors } from "@/lib/theme";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useOS } from "@/lib/store";
 import {
   saveWallpaperImage,
@@ -40,8 +38,7 @@ export function Appearance() {
       <h3 className="appearance-label">Theme</h3>
       <div className="theme-options" role="group" aria-label="Theme">
         {(["dark", "light"] as const).map((value) => (
-          <Button
-            variant="ghost"
+          <button
             key={value}
             aria-pressed={theme === value}
             onClick={() => useOS.getState().setTheme(value)}
@@ -52,14 +49,13 @@ export function Appearance() {
               <span>{theme === value && <Check size={15} />}</span>
             </div>
             <strong>{value === "dark" ? "Dark" : "Light"}</strong>
-          </Button>
+          </button>
         ))}
       </div>
       <h3 className="appearance-label">Accent color</h3>
       <div className="color-swatches" role="group" aria-label="Accent color">
         {accentColors.map(({ name, value }) => (
-          <Button
-            variant="ghost"
+          <button
             key={value}
             aria-label={name}
             title={name}
@@ -69,12 +65,12 @@ export function Appearance() {
             onClick={() => useOS.getState().setAccentColor(value)}
           >
             {accentColor === value && <Check size={16} />}
-          </Button>
+          </button>
         ))}
       </div>
       <label className="custom-color">
         <span>Custom accent</span>
-        <Input
+        <input
           type="color"
           aria-label="Custom accent color"
           value={accentColor}
@@ -110,8 +106,7 @@ export function Appearance() {
             aria-label="Background colors"
           >
             {colors.map((value) => (
-              <Button
-                variant="ghost"
+              <button
                 key={value}
                 aria-label={`Background ${value}`}
                 aria-pressed={color === value}
@@ -120,12 +115,12 @@ export function Appearance() {
                 onClick={() => useOS.getState().setWallpaperColor(value)}
               >
                 {color === value && <Check size={16} />}
-              </Button>
+              </button>
             ))}
           </div>
           <label className="custom-color">
             <span>Custom color</span>
-            <Input
+            <input
               type="color"
               aria-label="Custom background color"
               value={color}
@@ -139,7 +134,7 @@ export function Appearance() {
       )}
       {mode === "image" && (
         <div className="wallpaper-picture">
-          <Input
+          <input
             ref={imageInput}
             hidden
             type="file"
@@ -169,8 +164,7 @@ export function Appearance() {
             <div className="wallpaper-filename">
               <ImageIcon size={18} />
               <span title={imageName}>{imageName}</span>
-              <Button
-                variant="ghost"
+              <button
                 className="icon-button"
                 aria-label="Remove custom wallpaper"
                 disabled={busy}
@@ -192,18 +186,17 @@ export function Appearance() {
                 }}
               >
                 <X size={15} />
-              </Button>
+              </button>
             </div>
           )}
-          <Button
-            variant="ghost"
+          <button
             className="small-button"
             disabled={busy}
             onClick={() => imageInput.current?.click()}
           >
             <Upload size={15} />
             {busy ? "Saving…" : imageName ? "Change image" : "Choose image"}
-          </Button>
+          </button>
           {imageName && (
             <div className="background-type image-fit">
               <label htmlFor="wallpaper-fit">Image fit</label>

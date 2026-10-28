@@ -4,6 +4,3 @@ out/
 *.tsbuildinfo
 .env*
 !.env.example
-
-.reference-aether/
-.openai/

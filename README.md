@@ -37,11 +37,3 @@ Open http://localhost:3000. Use `npm run check` for types, regression tests and 
 ## Current boundaries
 
 Desktop first. Files live in this browser's localStorage, which is quota-limited and not encrypted. Custom wallpaper images are validated and stored separately in IndexedDB (JPEG, PNG, WebP, AVIF or GIF, up to 20 MB). Theme, accent, background preferences and the selected image survive reloads. Changing the interface theme or accent does not replace a custom background. Legacy Sage, Dusk and Graphite sessions migrate to Dark with Green, Rose and Slate accents respectively. `src/app/theme.css` owns the semantic surface palette; `src/lib/theme.ts` validates and migrates preferences and derives readable accent text. Theme variables live on the document root so portaled menus follow the same theme. JSON backups contain workspace files; they do not include wallpaper images or appearance preferences. Clearing site data removes the workspace; export backups for important content. There is no account, cloud synchronization, native process execution, arbitrary website embedding or simulated CPU/battery telemetry. This initial implementation does not yet include filesystem copy, a full POSIX shell, or rich media applications. Saved files, appearance and window layouts persist; unsaved editor buffers and terminal output are session-only.
-
-## Design system
-
-The interface uses the MIT-licensed [Aether theme](https://github.com/xkintaro/aether) semantic tokens, vendored in `src/app/aether-tokens.css`, with Tailwind v4 mappings in `aether-tailwind.css`. License attribution is in `AETHER-LICENSE`. Desktop aliases live in `theme.css`. User accents use `--user-accent` so shadcn's `--accent` keeps its semantic meaning.
-
-shadcn is configured in `components.json` (base-nova, Base UI). Reusable Button, Input and Textarea sources live in `src/components/ui`; Appearance uses Button and Input. Use these components for subsequent interface work.
-
-The original design is preserved on GitHub under the `design-before-shadcn` tag.

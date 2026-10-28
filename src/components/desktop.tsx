@@ -25,7 +25,6 @@ export function Desktop() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
-    root.classList.toggle("dark", theme === "dark");
     for (const [key, value] of Object.entries(
       themeAccent(accentColor, theme),
     )) {
