@@ -59,7 +59,9 @@ export default function Files({ win }: { win: WindowState }) {
   ];
   const folderEntries = trash
     ? files.filter((f) => f.trashed)
-    : childrenOf(files, folder);
+    : folder === ROOT_ID
+      ? sidebarEntries
+      : childrenOf(files, folder);
   const entries = folderEntries.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
