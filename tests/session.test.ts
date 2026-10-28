@@ -212,3 +212,40 @@ test("system folders cannot be deleted, renamed or moved while their contents re
     useOS.setState(previous);
   }
 });
+
+test("text documents keep .txt and coexist with folders using the same stem", () => {
+  const previous = useOS.getState();
+  useOS.setState({ files: structuredClone(initialFiles), windows: [] });
+  try {
+    const state = useOS.getState();
+    const text = state.createFile(ROOT_ID, "x", "text", "User content");
+    assert.ok(text);
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === text)?.name,
+      "x.txt",
+    );
+    const folder = state.createFile(ROOT_ID, "x", "folder");
+    assert.ok(folder);
+    assert.equal(state.createFile(ROOT_ID, "X.TXT", "text"), null);
+    assert.equal(state.createFile(ROOT_ID, "X", "folder"), null);
+    assert.equal(state.renameFile(text, "notes.md"), true);
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === text)?.name,
+      "notes.txt",
+    );
+    assert.equal(state.renameFile(folder, "notes"), true);
+    assert.equal(state.moveFile(text, folder).ok, true);
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === text)?.content,
+      "User content",
+    );
+    state.trashFile(text);
+    state.restoreFile(text);
+    assert.equal(
+      useOS.getState().files.find((file) => file.id === text)?.trashed,
+      false,
+    );
+  } finally {
+    useOS.setState(previous);
+  }
+});

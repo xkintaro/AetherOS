@@ -4,6 +4,7 @@ import {
   hasNameConflict,
   isProtected,
   validName,
+  itemName,
   type VFile,
 } from "@/lib/filesystem";
 import { useOS } from "@/lib/store";
@@ -32,14 +33,12 @@ export function useFileRename() {
       cancelRename();
       return true;
     }
+    const name = itemName(rename.value, file.kind);
     let error = "";
-    if (!validName(rename.value)) error = "Invalid name.";
-    else if (hasNameConflict(state.files, file.parent, rename.value, file.id))
+    if (!validName(name)) error = "Invalid name.";
+    else if (hasNameConflict(state.files, file.parent, name, file.id))
       error = "Name already exists.";
-    else if (
-      rename.value !== file.name &&
-      !state.renameFile(file.id, rename.value)
-    )
+    else if (name !== file.name && !state.renameFile(file.id, name))
       error = "Cannot rename this item.";
     if (error) {
       setRename({ ...rename, error });

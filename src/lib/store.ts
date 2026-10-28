@@ -8,6 +8,7 @@ import { windowMinimums } from "./window-geometry";
 import {
   initialFiles,
   validName,
+  itemName,
   isAvailable,
   isProtected,
   hasNameConflict,
@@ -274,6 +275,7 @@ export const useOS = create<State>()(
           wallpaperMode: wallpaperImageName ? "image" : "preset",
         })),
       createFile: (parent, name, kind, content = "") => {
+        name = itemName(name, kind);
         const s = get();
         const dir = s.files.find((f) => f.id === parent && f.kind === "folder");
         if (
@@ -301,6 +303,7 @@ export const useOS = create<State>()(
       renameFile: (id, name) => {
         const s = get();
         const f = s.files.find((f) => f.id === id);
+        if (f) name = itemName(name, f.kind);
         if (
           !f ||
           isProtected(id) ||

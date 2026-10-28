@@ -139,6 +139,14 @@ export function validName(name: string) {
     name.length <= 120
   );
 }
+/** Text documents always keep a visible .txt extension; folders keep their names. */
+export function itemName(name: string, kind: VFile["kind"]): string {
+  if (kind === "folder" || !validName(name) || /\.txt$/i.test(name))
+    return name;
+  const dot = name.lastIndexOf(".");
+  return `${dot > 0 ? name.slice(0, dot) : name}.txt`;
+}
+
 export function hasNameConflict(
   files: VFile[],
   parent: string | null,

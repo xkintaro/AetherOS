@@ -57,7 +57,10 @@ export default function Editor({ win }: { win: WindowState }) {
           );
         return;
       }
-      useOS.getState().updateWindow(win.id, { fileId: id, title: name });
+      useOS.getState().updateWindow(win.id, {
+        fileId: id,
+        title: useOS.getState().files.find((file) => file.id === id)!.name,
+      });
     }
     baseline.current = text;
     setExternalChange(false);
