@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;450;500&display=swap");
+@import "tailwindcss";
+@import "./aether-tokens.css";
+@import "./aether-tailwind.css";
 @import "./theme.css";
 :root {
   --mono: "IBM Plex Mono", monospace;
@@ -67,7 +70,7 @@ input {
 kbd {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 3px 5px;
@@ -76,7 +79,7 @@ p {
   line-height: 1.7;
 }
 .muted {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .eyebrow {
   font-family: var(--mono);
@@ -191,7 +194,7 @@ p {
   letter-spacing: 0.1px;
 }
 .topbar-date span {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .topbar-right {
   gap: 18px;
@@ -328,7 +331,7 @@ p {
 }
 .desktop-context-menu kbd {
   font-size: 9px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border: 0;
   padding: 0;
 }
@@ -360,7 +363,7 @@ p {
   padding: 2px 3px;
   border: 1px solid var(--accent-text);
   border-radius: 2px;
-  background: var(--input);
+  background: var(--background);
   color: var(--text);
   font: 11px/1.35 var(--font);
   text-align: center;
@@ -543,7 +546,7 @@ p {
   position: relative;
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-radius: 4px;
 }
 .workspace-switcher button.current {
@@ -625,7 +628,7 @@ p {
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .window-controls button:hover {
   background: var(--accent-soft);
@@ -685,7 +688,7 @@ p {
   justify-content: center;
   flex-direction: column;
   padding: 30px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .app-error h3 {
   font-weight: 450;
@@ -726,21 +729,21 @@ p {
   cursor: nesw-resize;
 }
 .primary {
-  background: var(--accent);
+  background: var(--user-accent);
   color: var(--on-accent) !important;
   padding: 11px 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--user-accent);
   border-radius: 5px;
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
 }
 .primary:hover {
-  background: var(--accent);
+  background: var(--user-accent);
 }
 .app-sidebar {
   width: 173px;
@@ -756,7 +759,7 @@ p {
   font-family: var(--mono);
   font-size: 7px;
   letter-spacing: 1.4px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 2px 13px 14px;
 }
 .app-sidebar > button {
@@ -765,7 +768,7 @@ p {
   align-items: center;
   gap: 11px;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-radius: 5px;
   text-align: left;
 }
@@ -808,7 +811,7 @@ p {
   gap: 10px;
   padding: 8px 16px;
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .icon-button {
   display: inline-flex;
@@ -817,7 +820,7 @@ p {
   width: 27px;
   height: 27px;
   border-radius: 5px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .icon-button:hover {
   background: var(--accent-soft);
@@ -868,7 +871,7 @@ p {
 }
 .folder-heading p {
   font-size: 9px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 0;
 }
 .inline-search {
@@ -878,7 +881,7 @@ p {
   align-items: center;
   gap: 8px;
   padding: 7px 9px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   width: 155px;
 }
 .inline-search input {
@@ -890,7 +893,7 @@ p {
   color: var(--text);
 }
 .inline-search input::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .file-entries {
   flex: 1;
@@ -936,7 +939,7 @@ p {
 }
 .file-entry small {
   font-family: var(--mono);
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 7px;
 }
 .list .file-entry {
@@ -961,7 +964,7 @@ p {
   justify-content: space-between;
   padding: 5px 15px;
   font-size: 8px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .files-status > div {
   display: flex;
@@ -973,7 +976,7 @@ p {
   align-items: center;
   gap: 5px;
   padding: 3px 4px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 9px;
 }
 .empty-state {
@@ -982,13 +985,13 @@ p {
   justify-content: center;
   flex-direction: column;
   padding: 45px 20px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   grid-column: 1/-1;
 }
 .empty-state h3 {
   font-size: 12px;
   font-weight: 400;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .empty-state p {
   font-size: 10px;
@@ -1025,7 +1028,7 @@ p {
   font-size: 15px;
 }
 .inline-modal > input {
-  background: var(--input);
+  background: var(--background);
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 10px;
@@ -1041,7 +1044,7 @@ p {
   flex: 1;
   padding: 7px;
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-radius: 4px;
 }
 .segmented button.active {
@@ -1061,7 +1064,7 @@ p {
 .editor-path {
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .filename-input {
   background: none;
@@ -1078,7 +1081,7 @@ p {
   min-height: 0;
   display: flex;
   overflow: hidden;
-  background: var(--input);
+  background: var(--background);
 }
 .line-numbers {
   flex-shrink: 0;
@@ -1086,7 +1089,7 @@ p {
   font-family: var(--mono);
   font-size: 11px;
   line-height: 23px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-align: right;
   padding: 0 18px 0 15px;
   user-select: none;
@@ -1118,11 +1121,11 @@ p {
   font-size: 4px;
   vertical-align: middle;
   margin: 0 7px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .terminal-app {
   height: 100%;
-  background: var(--input);
+  background: var(--background);
   color: var(--text);
   padding: 26px;
   overflow: auto;
@@ -1131,7 +1134,7 @@ p {
 }
 .terminal-hint {
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 0 0 20px;
 }
 .terminal-hint span {
@@ -1148,7 +1151,7 @@ p {
   color: var(--accent-text);
 }
 .terminal-path {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font: inherit;
   flex-shrink: 0;
 }
@@ -1169,7 +1172,7 @@ p {
 .terminal-block pre {
   white-space: pre-wrap;
   font: inherit;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 8px 0 20px;
   overflow-wrap: anywhere;
   font-size: 10px;
@@ -1194,7 +1197,7 @@ p {
 }
 .settings-main > p {
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 0 0 25px;
 }
 .settings-main .eyebrow {
@@ -1216,7 +1219,7 @@ p {
 }
 .background-type select {
   border: 1px solid var(--border);
-  background: var(--input);
+  background: var(--background);
   color: var(--text);
   border-radius: 5px;
   padding: 8px 30px 8px 10px;
@@ -1267,7 +1270,7 @@ p {
 }
 .color-value {
   font: 10px var(--mono);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .wallpaper-filename {
   display: flex;
@@ -1340,7 +1343,7 @@ p {
   display: block;
   font-size: 7px;
   margin-top: 4px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .shortcut-row {
   display: flex;
@@ -1349,7 +1352,7 @@ p {
   border-top: 1px solid var(--border);
   padding: 13px 0;
   font-size: 10px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .storage-card {
   display: flex;
@@ -1358,7 +1361,7 @@ p {
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 20px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .storage-card strong {
   font-size: 12px;
@@ -1367,7 +1370,7 @@ p {
 .storage-card p {
   font-size: 9px;
   margin: 5px 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .settings-main > p.storage-warning {
   font-size: 9px;
@@ -1410,7 +1413,7 @@ p {
   gap: 14px;
   padding: 20px 22px;
   border-bottom: 1px solid var(--border);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .search-field input {
   flex: 1;
@@ -1424,12 +1427,12 @@ p {
   outline: 0;
 }
 .search-field input::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .search-section-title {
   font: 7px var(--mono);
   letter-spacing: 1.5px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   padding: 20px 23px 10px;
 }
 .search-results {
@@ -1482,12 +1485,12 @@ p {
 .result-copy small {
   display: block;
   font-size: 8px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin-top: 5px;
 }
 .search-result > svg {
   margin-left: auto;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .search-footer {
   display: flex;
@@ -1495,7 +1498,7 @@ p {
   border-top: 1px solid var(--border);
   padding: 13px 22px;
   font-size: 8px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .search-footer .live-dot {
   width: 4px;
@@ -1514,7 +1517,7 @@ p {
 }
 .panel-title > button {
   font-size: 8px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .notification-panel {
   right: 16px;
@@ -1529,7 +1532,7 @@ p {
   gap: 12px;
   padding: 18px 0;
   border-bottom: 1px solid var(--border);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .notice strong {
   font-size: 10px;
@@ -1539,11 +1542,11 @@ p {
 .notice p {
   font-size: 9px;
   margin: 5px 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .notice small {
   font: 7px var(--mono);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .boot-screen {
   position: absolute;
@@ -1639,7 +1642,7 @@ p {
 }
 .search-message {
   padding: 18px 23px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 
@@ -1688,7 +1691,7 @@ p {
 }
 input::placeholder,
 textarea::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
   opacity: 1;
 }
 select {

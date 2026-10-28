@@ -51,7 +51,7 @@ export function themeAccent(color: string, theme: Theme) {
         .join("");
   }
   return {
-    "--accent": accent,
+    "--user-accent": accent,
     "--accent-text": text,
     "--on-accent":
       contrastRatio(accent, "#000000") >= 4.5 ? "#000000" : "#ffffff",

@@ -85,7 +85,7 @@ test("preset and extreme custom accents retain readable text in both modes", () 
   for (const theme of ["dark", "light"] as const) {
     for (const color of colors) {
       const vars = themeAccent(color, theme);
-      assert.equal(vars["--accent"], color);
+      assert.equal(vars["--user-accent"], color);
       assert.ok(
         contrastRatio(
           vars["--accent-text"],
