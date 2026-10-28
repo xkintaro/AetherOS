@@ -249,3 +249,50 @@ test("text documents keep .txt and coexist with folders using the same stem", ()
     useOS.setState(previous);
   }
 });
+
+test("old Markdown and extensionless documents migrate without losing content or colliding", () => {
+  const files = [
+    ...initialFiles,
+    {
+      id: "plain",
+      name: "notes.txt",
+      parent: ROOT_ID,
+      kind: "text" as const,
+      content: "Plain",
+      modified: 1,
+    },
+    {
+      id: "markdown",
+      name: "notes.md",
+      parent: ROOT_ID,
+      kind: "text" as const,
+      content: "# Keep this",
+      modified: 2,
+    },
+    {
+      id: "bare",
+      name: "notes",
+      parent: ROOT_ID,
+      kind: "text" as const,
+      content: "Bare",
+      modified: 3,
+    },
+  ];
+  const restored = restoreSession({ files }).files;
+  assert.equal(restored.find((file) => file.id === "plain")?.name, "notes.txt");
+  assert.equal(
+    restored.find((file) => file.id === "markdown")?.name,
+    "notes (2).txt",
+  );
+  assert.equal(
+    restored.find((file) => file.id === "bare")?.name,
+    "notes (3).txt",
+  );
+  for (const file of files) {
+    assert.equal(
+      restored.find((entry) => entry.id === file.id)?.content,
+      file.content,
+    );
+  }
+  assert.deepEqual(restoreSession({ files: restored }).files, restored);
+});

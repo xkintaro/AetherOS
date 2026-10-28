@@ -219,6 +219,25 @@ export function moveEntry(
 }
 /** Flatten legacy drive/user wrappers without changing user item IDs or contents. */
 export function migrateFiles(files: VFile[]): VFile[] {
+  let result = migrateLegacyFiles(files);
+  for (const file of result) {
+    const normalized = itemName(file.name, file.kind);
+    if (normalized === file.name || !validName(normalized)) continue;
+    const name = file.trashed
+      ? normalized
+      : nextAvailableName(
+          result.filter((entry) => entry.id !== file.id),
+          file.parent!,
+          normalized,
+        );
+    result = result.map((entry) =>
+      entry.id === file.id ? { ...entry, name } : entry,
+    );
+  }
+  return result;
+}
+
+function migrateLegacyFiles(files: VFile[]): VFile[] {
   if (files.some((file) => file.id === ROOT_ID))
     return restoreSystemFolders(files);
   const wrappers = new Set(["drive-c", "users", "home"]);
