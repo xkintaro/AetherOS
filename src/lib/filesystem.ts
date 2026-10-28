@@ -202,6 +202,10 @@ export function moveEntry(
 ): { files: VFile[]; result: FileResult } {
   const error = moveError(files, id, parent);
   if (error) return { files, result: { ok: false, error } };
+  const file = files.find((entry) => entry.id === id)!;
+  // Folder drops do not specify coordinates; only the desktop can reposition icons.
+  if (file.parent === parent && (parent !== DESKTOP_ID || !position))
+    return { files, result: { ok: true } };
   return {
     files: files.map((f) =>
       f.id === id

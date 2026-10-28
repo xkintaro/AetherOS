@@ -274,3 +274,51 @@ test("desktop placements stay distinct and clamp to the current viewport", () =>
   const point = desktopCell({ x: 99999, y: 99999 }, 600, 1000);
   assert.ok(point.x < 1000 && point.y < 600);
 });
+
+test("dropping into the same folder preserves desktop positions and modification times", () => {
+  const files = [
+    ...fixture(),
+    {
+      id: "desktop-note",
+      name: "note.txt",
+      parent: DESKTOP_ID,
+      kind: "text" as const,
+      content: "Keep",
+      modified: 123,
+      desktopPosition: { x: 304, y: 208 },
+    },
+  ];
+  for (const [id, parent] of [
+    ["desktop-note", DESKTOP_ID],
+    ["work", "nested"],
+    ["project", HOME_ID],
+  ]) {
+    const result = moveEntry(files, id, parent);
+    assert.equal(result.result.ok, true);
+    assert.equal(result.files, files);
+    assert.deepEqual(
+      result.files.find((file) => file.id === id),
+      files.find((file) => file.id === id),
+    );
+  }
+  const repositioned = moveEntry(files, "desktop-note", DESKTOP_ID, {
+    x: 16,
+    y: 112,
+  });
+  assert.equal(repositioned.result.ok, true);
+  assert.deepEqual(
+    repositioned.files.find((file) => file.id === "desktop-note")
+      ?.desktopPosition,
+    { x: 16, y: 112 },
+  );
+  const moved = moveEntry(files, "desktop-note", DOCUMENTS_ID);
+  assert.equal(moved.result.ok, true);
+  assert.equal(
+    moved.files.find((file) => file.id === "desktop-note")?.desktopPosition,
+    undefined,
+  );
+  assert.equal(
+    moved.files.find((file) => file.id === "desktop-note")?.content,
+    "Keep",
+  );
+});
