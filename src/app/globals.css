@@ -232,13 +232,13 @@ p {
   overflow: hidden;
 }
 .desktop-files
-  > .file-entry:is(:hover, :focus-visible, .file-selected):not(.file-renaming) {
+  > .file-entry.file-selected[data-name-expanded="true"]:not(.file-renaming) {
   height: auto;
   min-height: 88px;
   z-index: 2;
 }
 .desktop-files
-  > .file-entry:is(:hover, :focus-visible, .file-selected)
+  > .file-entry.file-selected[data-name-expanded="true"]
   .file-name {
   display: block;
   -webkit-line-clamp: unset;

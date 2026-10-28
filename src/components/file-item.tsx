@@ -65,7 +65,13 @@ export function FileItem({
       style={style}
       className={`file-entry ${selected ? "file-selected" : ""} ${drop.highlighted ? "file-drop-target" : ""} ${cut ? "file-cut" : ""} ${rename ? "file-renaming" : ""}`}
       aria-label={file.name}
-      title={isProtected(file.id) ? `${file.name} (System folder)` : file.name}
+      title={
+        view === "desktop"
+          ? undefined
+          : isProtected(file.id)
+            ? `${file.name} (System folder)`
+            : file.name
+      }
       aria-pressed={rename ? undefined : selected}
       draggable={!rename && !trashed && !isProtected(file.id)}
       onDragStart={(event) => {
