@@ -266,9 +266,6 @@ p {
   font-size: 10px;
   white-space: nowrap;
 }
-.breadcrumbs button:hover {
-  background: var(--accent-soft);
-}
 .desktop-menu-dismiss {
   position: fixed;
   inset: 0;
