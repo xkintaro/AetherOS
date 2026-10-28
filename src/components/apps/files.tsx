@@ -259,13 +259,15 @@ export default function Files({ win }: { win: WindowState }) {
               Paste
             </button>
           )}
-          <button
-            className="icon-button"
-            aria-label="Toggle file view"
-            onClick={() => setView(view === "grid" ? "list" : "grid")}
-          >
-            {view === "grid" ? <List size={17} /> : <LayoutGrid size={17} />}
-          </button>
+          {folderEntries.length > 0 && (
+            <button
+              className="icon-button"
+              aria-label="Toggle file view"
+              onClick={() => setView(view === "grid" ? "list" : "grid")}
+            >
+              {view === "grid" ? <List size={17} /> : <LayoutGrid size={17} />}
+            </button>
+          )}
         </div>
         <div className="folder-heading">
           <h2>{trash ? "trash" : current?.name}</h2>
