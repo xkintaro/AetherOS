@@ -205,22 +205,45 @@ p {
   position: absolute;
   width: 88px;
   height: 88px;
-  padding: 8px 5px;
+  padding: 6px 5px;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 4px;
   color: var(--text);
   text-align: center;
 }
+.desktop-files .file-folder,
+.desktop-files .file-document {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  flex-shrink: 0;
+}
 .desktop-files .file-name {
+  flex-shrink: 0;
   font-size: 11px;
   line-height: 1.35;
   text-shadow: none;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  width: 100%;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.desktop-files
+  > .file-entry:is(:hover, :focus-visible, .file-selected):not(.file-renaming) {
+  height: auto;
+  min-height: 88px;
+  z-index: 2;
+}
+.desktop-files
+  > .file-entry:is(:hover, :focus-visible, .file-selected)
+  .file-name {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 .desktop-files > .file-entry:hover {
   background: var(--accent-soft);
