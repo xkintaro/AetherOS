@@ -164,8 +164,11 @@ export function FileShortcut({
   if (!file) return null;
   return (
     <button
-      className={`${(file.kind === "folder" ? id === current : selected) ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
+      className={`${file.kind === "folder" && id === current ? "selected" : ""} ${file.kind === "text" && selected ? "sidebar-item-selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
       title={file.name}
+      aria-current={
+        file.kind === "folder" && id === current ? "location" : undefined
+      }
       aria-pressed={file.kind === "text" ? selected : undefined}
       onClick={() => (file.kind === "folder" ? onOpen(file) : onSelect(file))}
       onDoubleClick={() => {
