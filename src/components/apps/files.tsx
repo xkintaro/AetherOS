@@ -44,16 +44,12 @@ export default function Files({ win }: { win: WindowState }) {
     x: number;
     y: number;
     creationOnly?: boolean;
+    fileId?: string;
+    sidebar?: boolean;
   } | null>(null);
   const { beginRename, renameProps, cancelRename } = useFileRename();
   const trash = folder === "trash";
   const current = files.find((f) => f.id === folder);
-  const folderEntries = trash
-    ? files.filter((f) => f.trashed)
-    : childrenOf(files, folder);
-  const entries = folderEntries.filter((f) =>
-    f.name.toLowerCase().includes(query.toLowerCase()),
-  );
   const systemFolders = [DESKTOP_ID, DOCUMENTS_ID, DOWNLOADS_ID];
   const sidebarEntries = [
     ...systemFolders.flatMap((id) =>
@@ -63,7 +59,15 @@ export default function Files({ win }: { win: WindowState }) {
       (file) => !systemFolders.includes(file.id),
     ),
   ];
+  const folderEntries = trash
+    ? files.filter((f) => f.trashed)
+    : childrenOf(files, folder);
+  const entries = folderEntries.filter((f) =>
+    f.name.toLowerCase().includes(query.toLowerCase()),
+  );
   const selectedFile = entries.find((f) => f.id === selected);
+  const menuFile = files.find((file) => file.id === menu?.fileId);
+  const menuTrashed = Boolean(menuFile?.trashed);
   const drop = useFileDrop(trash ? null : folder);
   function navigate(id: string) {
     setMenu(null);
@@ -83,7 +87,7 @@ export default function Files({ win }: { win: WindowState }) {
     const result = useOS.getState().pasteFile(folder);
     if (!result.ok) useOS.getState().notify("Cannot move", result.error);
   }
-  function context(event: React.MouseEvent, file?: VFile) {
+  function context(event: React.MouseEvent, file?: VFile, sidebar = false) {
     if ((event.target as HTMLElement).closest("input,textarea")) return;
     event.preventDefault();
     event.stopPropagation();
@@ -92,7 +96,7 @@ export default function Files({ win }: { win: WindowState }) {
       return;
     }
     setSelected(file?.id ?? null);
-    setMenu({ x: event.clientX, y: event.clientY });
+    setMenu({ x: event.clientX, y: event.clientY, fileId: file?.id, sidebar });
   }
   function openFile(file: VFile) {
     setMenu(null);
@@ -174,13 +178,34 @@ export default function Files({ win }: { win: WindowState }) {
     >
       <aside className="app-sidebar">
         {sidebarEntries.map((file) => (
-          <FileShortcut key={file.id} id={file.id} current={folder} onOpen={openFile} />
+          <FileShortcut
+            key={file.id}
+            id={file.id}
+            current={folder}
+            onOpen={openFile}
+            onContextMenu={(event, file) => context(event, file, true)}
+          />
         ))}
         <div className="sidebar-divider" />
-        <FileShortcut id={ROOT_ID} current={folder} onOpen={openFile} />
+        <FileShortcut
+          id={ROOT_ID}
+          current={folder}
+          onOpen={openFile}
+          onContextMenu={(event, file) => context(event, file, true)}
+        />
         <button
           className={trash ? "selected" : ""}
           onClick={() => navigate("trash")}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setMenu({
+              x: event.clientX,
+              y: event.clientY,
+              fileId: "trash",
+              sidebar: true,
+            });
+          }}
         >
           <Trash2 size={17} />
           trash
@@ -294,7 +319,7 @@ export default function Files({ win }: { win: WindowState }) {
         <div className="files-status">
           <span title={trash ? "trash" : filePath(files, folder)}>
             {entries.length} items
-            {selectedFile ? " · " + selectedFile.name : ""}
+            {selectedFile ? " Â· " + selectedFile.name : ""}
           </span>
           <div>
             {selectedFile &&
@@ -339,35 +364,56 @@ export default function Files({ win }: { win: WindowState }) {
       </section>
       {menu && (
         <FileContextMenu
+          creationOnly={menu.creationOnly}
           x={menu.x}
           y={menu.y}
-          creationOnly={menu.creationOnly}
-          hasSelection={Boolean(selectedFile)}
-          protectedItem={selectedFile ? isProtected(selectedFile.id) : false}
-          trashed={trash}
-          canPaste={Boolean(cutId) && !trash}
+          hasSelection={Boolean(menuFile) || menu.fileId === "trash"}
+          protectedItem={
+            menu.fileId === "trash" ||
+            (menuFile ? isProtected(menuFile.id) : false)
+          }
+          trashed={menuTrashed}
+          canPaste={
+            Boolean(cutId) &&
+            !menuTrashed &&
+            (menu.sidebar ? menuFile?.kind === "folder" : !trash)
+          }
           onCreate={createItem}
           onOpen={() => {
-            if (selectedFile) openFile(selectedFile);
+            if (menu.fileId === "trash") navigate("trash");
+            else if (menuFile) openFile(menuFile);
           }}
           onCut={() => {
-            if (selectedFile) useOS.getState().cutFile(selectedFile.id);
+            if (menuFile) useOS.getState().cutFile(menuFile.id);
             setMenu(null);
           }}
           onRename={() => {
-            if (selectedFile) beginRename(selectedFile);
+            if (menuFile) {
+              if (menu.sidebar && menuFile.parent) {
+                navigate(menuFile.parent);
+                setSelected(menuFile.id);
+              }
+              beginRename(menuFile);
+            }
             setMenu(null);
           }}
           onTrash={() => {
-            if (selectedFile) useOS.getState().trashFile(selectedFile.id);
+            if (menuFile) useOS.getState().trashFile(menuFile.id);
             setSelected(null);
             setMenu(null);
           }}
           onRestore={() => {
-            if (selectedFile) useOS.getState().restoreFile(selectedFile.id);
+            if (menuFile) useOS.getState().restoreFile(menuFile.id);
             setMenu(null);
           }}
-          onPaste={paste}
+          onPaste={() => {
+            if (menu.sidebar && menuFile?.kind === "folder") {
+              const result = useOS.getState().pasteFile(menuFile.id);
+              if (!result.ok)
+                useOS.getState().notify("Cannot move", result.error);
+              setMenu(null);
+            } else paste();
+          }}
           onClose={() => setMenu(null)}
         />
       )}

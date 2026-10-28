@@ -148,10 +148,12 @@ export function FileShortcut({
   id,
   current,
   onOpen,
+  onContextMenu,
 }: {
   id: string;
   current: string;
   onOpen: (file: VFile) => void;
+  onContextMenu?: (event: React.MouseEvent, file: VFile) => void;
 }) {
   const file = useOS((state) => state.files.find((file) => file.id === id));
   const drop = useFileDrop(file?.kind === "folder" ? id : null);
@@ -161,6 +163,7 @@ export function FileShortcut({
       className={`${id === current ? "selected" : ""} ${drop.highlighted ? "file-drop-target" : ""}`}
       title={file.name}
       onClick={() => onOpen(file)}
+      onContextMenu={(event) => onContextMenu?.(event, file)}
       {...drop.handlers}
     >
       <FileIcon file={file} size={17} />
