@@ -33,7 +33,10 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
   const positions = desktopLayout(entries, area.height, area.width);
   useEffect(() => {
     const resize = () =>
-      setArea({ width: window.innerWidth, height: window.innerHeight - 140 });
+      setArea({
+        width: window.innerWidth,
+        height: window.innerHeight - (window.innerWidth <= 800 ? 154 : 104),
+      });
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
@@ -51,7 +54,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     setMenu({
       x: event.clientX,
       y: event.clientY,
-      origin: { x: event.clientX, y: event.clientY - 36 },
+      origin: { x: event.clientX, y: event.clientY },
     });
   }
   function beginRename(file: VFile) {

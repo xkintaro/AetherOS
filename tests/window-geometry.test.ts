@@ -24,7 +24,7 @@ test("minimum size and workspace bounds survive extreme drags", () => {
   assert.equal(expanded.y + expanded.height, viewport.height - 96);
   const north = resizeRect(rect, "nw", -5000, -5000, viewport);
   assert.equal(north.x, 12);
-  assert.equal(north.y, 44);
+  assert.equal(north.y, 8);
 });
 
 test("each app keeps its minimum size from every resize edge", () => {
@@ -58,5 +58,5 @@ test("old undersized windows and narrow browser sizes cannot bypass app minimums
   assert.equal(small.width, minimum.width);
   assert.equal(small.height, minimum.height);
   assert.equal(small.x, 0);
-  assert.equal(small.y, 42);
+  assert.equal(small.y, 8);
 });

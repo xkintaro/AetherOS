@@ -45,7 +45,7 @@ export function resizeRect(
     height = clamp(
       rect.height - dy,
       minHeight,
-      Math.max(minHeight, bottom - 44),
+      Math.max(minHeight, bottom - 8),
     );
     y = bottom - height;
   }
@@ -64,12 +64,12 @@ export function constrainRect(
   );
   const height = Math.max(
     minimum.height,
-    Math.min(rect.height, viewport.height - 140),
+    Math.min(rect.height, viewport.height - 104),
   );
   return {
     width,
     height,
     x: clamp(rect.x, 0, Math.max(0, viewport.width - width - 12)),
-    y: clamp(rect.y, 42, Math.max(42, viewport.height - height - 96)),
+    y: clamp(rect.y, 8, Math.max(8, viewport.height - height - 96)),
   };
 }

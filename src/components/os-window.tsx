@@ -46,7 +46,7 @@ export const OSWindow = memo(function OSWindow({
         Math.min(window.innerWidth - 140, start.x + event.clientX - sx),
       );
       const y = Math.max(
-        40,
+        8,
         Math.min(window.innerHeight - 120, start.y + event.clientY - sy),
       );
       if (ref.current) {
@@ -64,7 +64,7 @@ export const OSWindow = memo(function OSWindow({
           Math.min(window.innerWidth - 140, start.x + event.clientX - sx),
         ),
         y: Math.max(
-          40,
+          8,
           Math.min(window.innerHeight - 120, start.y + event.clientY - sy),
         ),
       });
@@ -134,9 +134,9 @@ export const OSWindow = memo(function OSWindow({
           minWidth: windowMinimums[win.app].width,
           minHeight: windowMinimums[win.app].height,
           left: win.maximized ? 10 : win.x,
-          top: win.maximized ? 42 : win.y,
+          top: win.maximized ? 8 : win.y,
           width: win.maximized ? "calc(100vw - 20px)" : win.width,
-          height: win.maximized ? "calc(100dvh - 136px)" : win.height,
+          height: win.maximized ? "calc(100dvh - 104px)" : win.height,
           zIndex: 100 + win.z,
         }}
         onPointerDown={() => {

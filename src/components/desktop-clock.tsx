@@ -10,7 +10,7 @@ export function DesktopClock() {
     return () => clearInterval(timer);
   }, []);
   return (
-    <time className="topbar-date" dateTime={clock?.toISOString()}>
+    <time className="tray-date" dateTime={clock?.toISOString()}>
       {clock?.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",

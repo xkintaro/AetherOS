@@ -125,31 +125,6 @@ export function Desktop() {
   return (
     <main className="desktop">
       <Wallpaper />
-      <header className="topbar">
-        <div className="topbar-left">
-          <span className="desktop-brand" aria-label="AetherOS">
-            <Brand size={21} />
-          </span>
-          <span className="topbar-app">
-            {active?.title.replace(" •", "") ?? "AetherOS"}
-          </span>
-        </div>
-        <div className="topbar-right">
-          {notices.length > 0 && (
-            <button
-              className="topbar-icon notification-icon"
-              aria-label={`Notifications (${notices.length})`}
-              onClick={() =>
-                setPanel(panel === "notifications" ? null : "notifications")
-              }
-            >
-              <Bell size={16} />
-              <i />
-            </button>
-          )}
-          <DesktopClock />
-        </div>
-      </header>
       <DesktopFiles onInteract={() => setPanel(null)} />
       {windows.map((win) => (
         <OSWindow
@@ -159,9 +134,7 @@ export function Desktop() {
           hidden={win.minimized || win.workspace !== workspace}
         />
       ))}
-      <footer
-        className={`dock-region ${panel === "search" ? "menu-open" : ""}`}
-      >
+      <footer className={`dock-region ${panel ? "menu-open" : ""}`}>
         <nav className="workspace-switcher" aria-label="Workspaces">
           {[0, 1].map((number) => (
             <button
@@ -234,19 +207,34 @@ export function Desktop() {
             </button>
           ))}
         </nav>
-        {visible.length > 0 && (
-          <button
-            className="show-desktop"
-            aria-label="Show desktop"
-            onClick={() => {
-              visible.forEach((win) =>
-                useOS.getState().updateWindow(win.id, { minimized: true }),
-              );
-            }}
-          >
-            <Monitor size={16} />
-          </button>
-        )}
+        <div className="system-tray">
+          {notices.length > 0 && (
+            <button
+              className="tray-icon notification-icon"
+              aria-label={`Notifications (${notices.length})`}
+              onClick={() =>
+                setPanel(panel === "notifications" ? null : "notifications")
+              }
+            >
+              <Bell size={16} />
+              <i />
+            </button>
+          )}
+          <DesktopClock />
+          {visible.length > 0 && (
+            <button
+              className="show-desktop"
+              aria-label="Show desktop"
+              onClick={() => {
+                visible.forEach((win) =>
+                  useOS.getState().updateWindow(win.id, { minimized: true }),
+                );
+              }}
+            >
+              <Monitor size={16} />
+            </button>
+          )}
+        </div>
       </footer>
       {panel && (
         <div className="panel-dismiss" onPointerDown={() => setPanel(null)} />
