@@ -49,10 +49,11 @@ export default function Files({ win }: { win: WindowState }) {
   const trash = folder === "trash";
   const current = files.find((f) => f.id === folder);
   const systemFolders = [DESKTOP_ID, DOCUMENTS_ID, DOWNLOADS_ID];
-  const sidebarEntries = [
-    ...systemFolders.flatMap((id) =>
-      files.filter((file) => file.id === id && isAvailable(files, id)),
-    ),
+  const sidebarEntries = systemFolders.flatMap((id) =>
+    files.filter((file) => file.id === id && isAvailable(files, id)),
+  );
+  const rootEntries = [
+    ...sidebarEntries,
     ...childrenOf(files, ROOT_ID).filter(
       (file) => !systemFolders.includes(file.id),
     ),
@@ -60,7 +61,7 @@ export default function Files({ win }: { win: WindowState }) {
   const folderEntries = trash
     ? files.filter((f) => f.trashed)
     : folder === ROOT_ID
-      ? sidebarEntries
+      ? rootEntries
       : childrenOf(files, folder);
   const entries = folderEntries.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
