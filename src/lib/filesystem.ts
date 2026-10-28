@@ -139,8 +139,6 @@ export function validName(name: string) {
     name.length <= 120
   );
 }
-export const unsupportedFileMessage =
-  "Only .txt files can be opened. Files without an extension or with another extension are not supported.";
 export function isTextFileName(name: string): boolean {
   return name.length > 4 && /\.txt$/i.test(name);
 }

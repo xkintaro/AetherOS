@@ -228,7 +228,7 @@ test("text documents keep .txt and coexist with folders using the same stem", ()
     assert.ok(folder);
     assert.equal(state.createFile(ROOT_ID, "X.TXT", "text"), null);
     assert.equal(state.createFile(ROOT_ID, "X", "folder"), null);
-    assert.equal(state.renameFile(text, "notes.md"), false);
+    assert.equal(state.renameFile(text, "notes.md"), true);
     assert.equal(state.renameFile(text, "notes.txt"), true);
     assert.equal(
       useOS.getState().files.find((file) => file.id === text)?.name,
@@ -295,7 +295,7 @@ test("unsupported document names and contents remain unchanged on restore", () =
   assert.deepEqual(restoreSession({ files: restored }).files, restored);
 });
 
-test("unsupported and extensionless files warn and cannot open or be created", () => {
+test("unsupported and extensionless files can be created and renamed but opening requests a dialog", () => {
   const previous = useOS.getState();
   try {
     for (const name of ["x", "x.md", "x.pdf", "x.png", "x.txt.exe", ".txt"]) {
@@ -313,15 +313,28 @@ test("unsupported and extensionless files warn and cannot open or be created", (
         ],
         windows: [],
         notices: [],
+        unsupportedFile: null,
       });
       const state = useOS.getState();
       state.openApp("editor", "unsupported");
       assert.equal(useOS.getState().windows.length, 0, name);
-      assert.equal(useOS.getState().notices[0]?.title, "Unsupported file type");
-      assert.equal(state.createFile(ROOT_ID, name, "text"), null);
+      assert.equal(useOS.getState().unsupportedFile, name);
+      assert.equal(useOS.getState().notices.length, 0);
+      const created = state.createFile(
+        DOCUMENTS_ID,
+        name,
+        "text",
+        "Saved content",
+      );
+      assert.ok(created);
+      assert.equal(state.renameFile(created, `renamed-${name}`), true);
+      assert.equal(
+        useOS.getState().files.find((file) => file.id === created)?.content,
+        "Saved content",
+      );
       if (name !== ".txt")
         assert.equal(
-          state.createFile(DOCUMENTS_ID, name, "folder") !== null,
+          state.createFile(DESKTOP_ID, name, "folder") !== null,
           true,
         );
       assert.equal(

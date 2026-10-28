@@ -9,7 +9,6 @@ import {
   initialFiles,
   validName,
   isTextFileName,
-  unsupportedFileMessage,
   isAvailable,
   isProtected,
   hasNameConflict,
@@ -42,6 +41,7 @@ type State = {
   wallpaperImageName: string;
   wallpaperRevision: number;
   notices: Notice[];
+  unsupportedFile: string | null;
   cutFileId: string | null;
   draggedFileId: string | null;
   setDraggedFile: (id: string | null) => void;
@@ -93,6 +93,7 @@ export const useOS = create<State>()(
       wallpaperImageName: "",
       wallpaperRevision: 0,
       notices: [],
+      unsupportedFile: null,
       cutFileId: null,
       draggedFileId: null,
       setDraggedFile: (draggedFileId) => set({ draggedFileId }),
@@ -121,7 +122,7 @@ export const useOS = create<State>()(
             return;
           }
           if (!isTextFileName(file.name)) {
-            s.notify("Unsupported file type", unsupportedFileMessage);
+            set({ unsupportedFile: file.name });
             return;
           }
         }
@@ -287,13 +288,6 @@ export const useOS = create<State>()(
           wallpaperMode: wallpaperImageName ? "image" : "preset",
         })),
       createFile: (parent, name, kind, content = "") => {
-        if (kind === "text" && !isTextFileName(name)) {
-          get().notify(
-            "Unsupported file type",
-            "Text file names must end with .txt.",
-          );
-          return null;
-        }
         const s = get();
         const dir = s.files.find((f) => f.id === parent && f.kind === "folder");
         if (
@@ -321,13 +315,6 @@ export const useOS = create<State>()(
       renameFile: (id, name) => {
         const s = get();
         const f = s.files.find((f) => f.id === id);
-        if (f?.kind === "text" && !isTextFileName(name)) {
-          s.notify(
-            "Unsupported file type",
-            "Text file names must end with .txt.",
-          );
-          return false;
-        }
         if (
           !f ||
           isProtected(id) ||

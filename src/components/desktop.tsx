@@ -9,6 +9,7 @@ import { StartMenu } from "./start-menu";
 import { Wallpaper } from "./wallpaper";
 import { DesktopFiles } from "./desktop-files";
 import { themeAccent } from "@/lib/theme";
+import { FileFormatDialog } from "./file-format-dialog";
 import { DesktopClock } from "./desktop-clock";
 import { STORAGE_ERROR_EVENT } from "@/lib/storage";
 import { constrainRect, windowMinimums } from "@/lib/window-geometry";
@@ -125,6 +126,7 @@ export function Desktop() {
   return (
     <main className="desktop">
       <Wallpaper />
+      <FileFormatDialog />
       <DesktopFiles onInteract={() => setPanel(null)} />
       {windows.map((win) => (
         <OSWindow
