@@ -18,7 +18,11 @@ import {
   parseBackup,
   type VFile,
 } from "../src/lib/filesystem";
-import { desktopLayout, desktopCell } from "../src/lib/desktop-layout";
+import {
+  desktopLayout,
+  desktopCell,
+  desktopDropPosition,
+} from "../src/lib/desktop-layout";
 
 const folder = (id: string, name: string, parent: string): VFile => ({
   id,
@@ -321,4 +325,99 @@ test("dropping into the same folder preserves desktop positions and modification
     moved.files.find((file) => file.id === "desktop-note")?.content,
     "Keep",
   );
+});
+
+test("desktop drops snap to the closest empty cell without displacing other icons", () => {
+  const files = [
+    { ...folder("a", "A", DESKTOP_ID), desktopPosition: { x: 16, y: 16 } },
+    { ...folder("b", "B", DESKTOP_ID), desktopPosition: { x: 16, y: 112 } },
+    { ...folder("c", "C", DESKTOP_ID), desktopPosition: { x: 208, y: 208 } },
+  ];
+  const before = desktopLayout(files, 600, 1000);
+  const position = desktopDropPosition(
+    files,
+    "new",
+    { x: 20, y: 20 },
+    600,
+    1000,
+  );
+  assert.deepEqual(position, { x: 112, y: 16 });
+  const after = desktopLayout(
+    [
+      ...files,
+      { ...folder("new", "New", DESKTOP_ID), desktopPosition: position },
+    ],
+    600,
+    1000,
+  );
+  for (const file of files)
+    assert.deepEqual(after.get(file.id), before.get(file.id));
+  assert.deepEqual(
+    desktopDropPosition(files, "a", { x: 17, y: 17 }, 600, 1000),
+    { x: 16, y: 16 },
+  );
+  assert.deepEqual(
+    desktopDropPosition(files, "new", { x: 192, y: 114 }, 600, 1000),
+    { x: 208, y: 112 },
+  );
+});
+
+test("a full desktop grid uses additional columns without overlapping icons", () => {
+  const files = Array.from({ length: 4 }, (_, i) =>
+    folder(String(i), String(i), DESKTOP_ID),
+  );
+  const position = desktopDropPosition(
+    files,
+    "new",
+    { x: 16, y: 16 },
+    224,
+    224,
+  );
+  assert.deepEqual(position, { x: 208, y: 16 });
+  const all = desktopLayout(
+    [
+      ...files,
+      { ...folder("new", "New", DESKTOP_ID), desktopPosition: position },
+    ],
+    224,
+    224,
+  );
+  assert.equal(
+    new Set([...all.values()].map((point) => `${point.x}:${point.y}`)).size,
+    5,
+  );
+});
+
+test("saved desktop cells stay stable after renaming, adding files and overflow", () => {
+  const files = Array.from({ length: 5 }, (_, i) =>
+    folder(String(i), String(i), DESKTOP_ID),
+  );
+  const before = desktopLayout(files, 224, 224);
+  const saved = files.map((file) => ({
+    ...file,
+    desktopPosition: before.get(file.id)!,
+  }));
+  assert.deepEqual(desktopLayout(saved, 224, 224), before);
+  const renamed = saved
+    .map((file) => ({ ...file, name: `Renamed ${file.id}` }))
+    .reverse();
+  const after = desktopLayout(
+    [folder("new", "A new file", DESKTOP_ID), ...renamed],
+    224,
+    224,
+  );
+  for (const file of files)
+    assert.deepEqual(after.get(file.id), before.get(file.id));
+  const occupied = new Set(
+    [...before.values()].map((point) => `${point.x}:${point.y}`),
+  );
+  const drop = desktopDropPosition(saved, "new", { x: 16, y: 16 }, 224, 224);
+  assert.equal(occupied.has(`${drop.x}:${drop.y}`), false);
+  const next = desktopLayout(
+    [...saved, { ...folder("new", "New", DESKTOP_ID), desktopPosition: drop }],
+    224,
+    224,
+  );
+  for (const file of files)
+    assert.deepEqual(next.get(file.id), before.get(file.id));
 });

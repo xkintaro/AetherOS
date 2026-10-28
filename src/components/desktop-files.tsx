@@ -9,7 +9,7 @@ import {
   nextAvailableName,
   type VFile,
 } from "@/lib/filesystem";
-import { desktopCell, desktopLayout } from "@/lib/desktop-layout";
+import { desktopDropPosition, desktopLayout } from "@/lib/desktop-layout";
 import { FileItem } from "./file-item";
 import { FileContextMenu } from "./file-context-menu";
 import { useFileRename } from "./use-file-rename";
@@ -27,10 +27,16 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     origin: { x: number; y: number };
   } | null>(null);
   const { beginRename: editName, renameProps } = useFileRename();
-  const [area, setArea] = useState({ width: 1024, height: 640 });
+  const [area, setArea] = useState<{ width: number; height: number } | null>(
+    null,
+  );
   const entries = childrenOf(files, DESKTOP_ID),
     selectedFile = entries.find((f) => f.id === selected);
-  const positions = desktopLayout(entries, area.height, area.width);
+  const positions = desktopLayout(
+    entries,
+    area?.height ?? 640,
+    area?.width ?? 1024,
+  );
   useEffect(() => {
     const resize = () =>
       setArea({
@@ -41,6 +47,39 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, []);
+  useEffect(() => {
+    if (!area) return;
+    const current = useOS.getState().files;
+    const layout = desktopLayout(
+      childrenOf(current, DESKTOP_ID),
+      area.height,
+      area.width,
+    );
+    let changed = false;
+    const positioned = current.map((file) => {
+      const position = layout.get(file.id);
+      if (
+        !position ||
+        (file.desktopPosition?.x === position.x &&
+          file.desktopPosition?.y === position.y)
+      )
+        return file;
+      changed = true;
+      return { ...file, desktopPosition: position };
+    });
+    if (changed) useOS.setState({ files: positioned });
+  }, [files, area]);
+
+  function placement(id: string, point: { x: number; y: number }) {
+    return desktopDropPosition(
+      childrenOf(useOS.getState().files, DESKTOP_ID),
+      id,
+      point,
+      area?.height ?? 640,
+      area?.width ?? 1024,
+    );
+  }
+
   function paste() {
     const result = useOS.getState().pasteFile(DESKTOP_ID);
     if (!result.ok) useOS.getState().notify("Cannot move", result.error);
@@ -51,10 +90,15 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
     event.stopPropagation();
     onInteract();
     setSelected(file?.id ?? null);
+    const desktop = event.currentTarget.closest<HTMLElement>(".desktop-files")!;
+    const rect = desktop.getBoundingClientRect();
     setMenu({
       x: event.clientX,
       y: event.clientY,
-      origin: { x: event.clientX, y: event.clientY },
+      origin: {
+        x: event.clientX - rect.left + desktop.scrollLeft,
+        y: event.clientY - rect.top + desktop.scrollTop,
+      },
     });
   }
   function beginRename(file: VFile) {
@@ -74,12 +118,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
       state.notify("Cannot create item", "Choose a different name.");
       return;
     }
-    if (menu)
-      state.moveFile(
-        id,
-        DESKTOP_ID,
-        desktopCell(menu.origin, area.height, area.width),
-      );
+    if (menu) state.moveFile(id, DESKTOP_ID, placement(id, menu.origin));
     setMenu(null);
     setSelected(id);
     editName(useOS.getState().files.find((file) => file.id === id)!);
@@ -120,14 +159,10 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
         const id = event.dataTransfer.getData(FILE_DRAG_TYPE);
         const rect = event.currentTarget.getBoundingClientRect();
         if (id) {
-          const position = desktopCell(
-            {
-              x: event.clientX - rect.left - 40,
-              y: event.clientY - rect.top - 40,
-            },
-            area.height,
-            area.width,
-          );
+          const position = placement(id, {
+            x: event.clientX - rect.left + event.currentTarget.scrollLeft - 40,
+            y: event.clientY - rect.top + event.currentTarget.scrollTop - 40,
+          });
           const result = useOS.getState().moveFile(id, DESKTOP_ID, position);
           if (!result.ok) useOS.getState().notify("Cannot move", result.error);
           else setSelected(id);
