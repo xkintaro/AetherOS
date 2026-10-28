@@ -125,6 +125,7 @@ export function FileContextMenu({
         role="menu"
         aria-label={label}
         style={{ left: position.x, top: position.y }}
+        onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => {
           event.preventDefault();

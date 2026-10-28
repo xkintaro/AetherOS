@@ -139,6 +139,7 @@ export function DesktopFiles({ onInteract }: { onInteract: () => void }) {
       ref={selection.ref}
       {...selection.handlers}
       onPointerDown={(event) => {
+        if (!event.currentTarget.contains(event.target as Node)) return;
         onInteract();
         setMenu(null);
         selection.handlers.onPointerDown(event);
