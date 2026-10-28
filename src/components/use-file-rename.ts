@@ -4,7 +4,7 @@ import {
   hasNameConflict,
   isProtected,
   validName,
-  itemName,
+  isTextFileName,
   type VFile,
 } from "@/lib/filesystem";
 import { useOS } from "@/lib/store";
@@ -33,9 +33,11 @@ export function useFileRename() {
       cancelRename();
       return true;
     }
-    const name = itemName(rename.value, file.kind);
+    const name = rename.value;
     let error = "";
     if (!validName(name)) error = "Invalid name.";
+    else if (file.kind === "text" && !isTextFileName(name))
+      error = "Text file names must end with .txt.";
     else if (hasNameConflict(state.files, file.parent, name, file.id))
       error = "Name already exists.";
     else if (name !== file.name && !state.renameFile(file.id, name))

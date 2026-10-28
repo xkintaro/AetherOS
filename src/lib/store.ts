@@ -8,7 +8,8 @@ import { windowMinimums } from "./window-geometry";
 import {
   initialFiles,
   validName,
-  itemName,
+  isTextFileName,
+  unsupportedFileMessage,
   isAvailable,
   isProtected,
   hasNameConflict,
@@ -113,6 +114,17 @@ export const useOS = create<State>()(
       },
       openApp: (app, fileId) => {
         const s = get();
+        if (app === "editor" && fileId) {
+          const file = s.files.find((entry) => entry.id === fileId);
+          if (!file || file.kind !== "text" || !isAvailable(s.files, fileId)) {
+            s.notify("Cannot open file", "The file is no longer available.");
+            return;
+          }
+          if (!isTextFileName(file.name)) {
+            s.notify("Unsupported file type", unsupportedFileMessage);
+            return;
+          }
+        }
         const existing = s.windows.find(
           (w) => w.app === app && w.fileId === fileId,
         );
@@ -275,7 +287,13 @@ export const useOS = create<State>()(
           wallpaperMode: wallpaperImageName ? "image" : "preset",
         })),
       createFile: (parent, name, kind, content = "") => {
-        name = itemName(name, kind);
+        if (kind === "text" && !isTextFileName(name)) {
+          get().notify(
+            "Unsupported file type",
+            "Text file names must end with .txt.",
+          );
+          return null;
+        }
         const s = get();
         const dir = s.files.find((f) => f.id === parent && f.kind === "folder");
         if (
@@ -303,7 +321,13 @@ export const useOS = create<State>()(
       renameFile: (id, name) => {
         const s = get();
         const f = s.files.find((f) => f.id === id);
-        if (f) name = itemName(name, f.kind);
+        if (f?.kind === "text" && !isTextFileName(name)) {
+          s.notify(
+            "Unsupported file type",
+            "Text file names must end with .txt.",
+          );
+          return false;
+        }
         if (
           !f ||
           isProtected(id) ||

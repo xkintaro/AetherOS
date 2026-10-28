@@ -1,5 +1,11 @@
 import { restoreTheme } from "./theme";
-import { initialFiles, parseBackup, ROOT_ID, type VFile } from "./filesystem";
+import {
+  initialFiles,
+  parseBackup,
+  ROOT_ID,
+  isTextFileName,
+  type VFile,
+} from "./filesystem";
 import {
   appIds,
   appNames,
@@ -52,6 +58,10 @@ export function restoreSession(value: unknown) {
     )
       continue;
     const app = win.app as AppId;
+    if (app === "editor" && typeof win.fileId === "string") {
+      const file = files.find((entry) => entry.id === win.fileId);
+      if (!file || file.kind !== "text" || !isTextFileName(file.name)) continue;
+    }
     const minimum = windowMinimums[app];
     const legacyFolder = (value: unknown) =>
       typeof value === "string"

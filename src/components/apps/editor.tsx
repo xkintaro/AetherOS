@@ -2,7 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import { FileText, Check, Save } from "lucide-react";
 import { useOS, type WindowState } from "@/lib/store";
-import { filePath, isAvailable, DOCUMENTS_ID, HOME_ID } from "@/lib/filesystem";
+import {
+  filePath,
+  isAvailable,
+  DOCUMENTS_ID,
+  HOME_ID,
+  isTextFileName,
+} from "@/lib/filesystem";
 
 export default function Editor({ win }: { win: WindowState }) {
   const file = useOS((s) => s.files.find((f) => f.id === win.fileId));
@@ -30,6 +36,12 @@ export default function Editor({ win }: { win: WindowState }) {
     }
   }, [file?.content, text]);
   const save = () => {
+    if (!file && !isTextFileName(name)) {
+      useOS
+        .getState()
+        .notify("Unsupported file type", "Text file names must end with .txt.");
+      return;
+    }
     if (
       externalChange &&
       !window.confirm(

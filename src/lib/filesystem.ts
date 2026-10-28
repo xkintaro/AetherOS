@@ -139,12 +139,10 @@ export function validName(name: string) {
     name.length <= 120
   );
 }
-/** Text documents always keep a visible .txt extension; folders keep their names. */
-export function itemName(name: string, kind: VFile["kind"]): string {
-  if (kind === "folder" || !validName(name) || /\.txt$/i.test(name))
-    return name;
-  const dot = name.lastIndexOf(".");
-  return `${dot > 0 ? name.slice(0, dot) : name}.txt`;
+export const unsupportedFileMessage =
+  "Only .txt files can be opened. Files without an extension or with another extension are not supported.";
+export function isTextFileName(name: string): boolean {
+  return name.length > 4 && /\.txt$/i.test(name);
 }
 
 export function hasNameConflict(
@@ -219,25 +217,6 @@ export function moveEntry(
 }
 /** Flatten legacy drive/user wrappers without changing user item IDs or contents. */
 export function migrateFiles(files: VFile[]): VFile[] {
-  let result = migrateLegacyFiles(files);
-  for (const file of result) {
-    const normalized = itemName(file.name, file.kind);
-    if (normalized === file.name || !validName(normalized)) continue;
-    const name = file.trashed
-      ? normalized
-      : nextAvailableName(
-          result.filter((entry) => entry.id !== file.id),
-          file.parent!,
-          normalized,
-        );
-    result = result.map((entry) =>
-      entry.id === file.id ? { ...entry, name } : entry,
-    );
-  }
-  return result;
-}
-
-function migrateLegacyFiles(files: VFile[]): VFile[] {
   if (files.some((file) => file.id === ROOT_ID))
     return restoreSystemFolders(files);
   const wrappers = new Set(["drive-c", "users", "home"]);

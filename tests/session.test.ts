@@ -218,7 +218,7 @@ test("text documents keep .txt and coexist with folders using the same stem", ()
   useOS.setState({ files: structuredClone(initialFiles), windows: [] });
   try {
     const state = useOS.getState();
-    const text = state.createFile(ROOT_ID, "x", "text", "User content");
+    const text = state.createFile(ROOT_ID, "x.txt", "text", "User content");
     assert.ok(text);
     assert.equal(
       useOS.getState().files.find((file) => file.id === text)?.name,
@@ -228,7 +228,8 @@ test("text documents keep .txt and coexist with folders using the same stem", ()
     assert.ok(folder);
     assert.equal(state.createFile(ROOT_ID, "X.TXT", "text"), null);
     assert.equal(state.createFile(ROOT_ID, "X", "folder"), null);
-    assert.equal(state.renameFile(text, "notes.md"), true);
+    assert.equal(state.renameFile(text, "notes.md"), false);
+    assert.equal(state.renameFile(text, "notes.txt"), true);
     assert.equal(
       useOS.getState().files.find((file) => file.id === text)?.name,
       "notes.txt",
@@ -250,7 +251,7 @@ test("text documents keep .txt and coexist with folders using the same stem", ()
   }
 });
 
-test("old Markdown and extensionless documents migrate without losing content or colliding", () => {
+test("unsupported document names and contents remain unchanged on restore", () => {
   const files = [
     ...initialFiles,
     {
@@ -282,12 +283,9 @@ test("old Markdown and extensionless documents migrate without losing content or
   assert.equal(restored.find((file) => file.id === "plain")?.name, "notes.txt");
   assert.equal(
     restored.find((file) => file.id === "markdown")?.name,
-    "notes (2).txt",
+    "notes.md",
   );
-  assert.equal(
-    restored.find((file) => file.id === "bare")?.name,
-    "notes (3).txt",
-  );
+  assert.equal(restored.find((file) => file.id === "bare")?.name, "notes");
   for (const file of files) {
     assert.equal(
       restored.find((entry) => entry.id === file.id)?.content,
@@ -295,4 +293,51 @@ test("old Markdown and extensionless documents migrate without losing content or
     );
   }
   assert.deepEqual(restoreSession({ files: restored }).files, restored);
+});
+
+test("unsupported and extensionless files warn and cannot open or be created", () => {
+  const previous = useOS.getState();
+  try {
+    for (const name of ["x", "x.md", "x.pdf", "x.png", "x.txt.exe", ".txt"]) {
+      useOS.setState({
+        files: [
+          ...initialFiles,
+          {
+            id: "unsupported",
+            name,
+            parent: ROOT_ID,
+            kind: "text",
+            content: "Keep",
+            modified: 1,
+          },
+        ],
+        windows: [],
+        notices: [],
+      });
+      const state = useOS.getState();
+      state.openApp("editor", "unsupported");
+      assert.equal(useOS.getState().windows.length, 0, name);
+      assert.equal(useOS.getState().notices[0]?.title, "Unsupported file type");
+      assert.equal(state.createFile(ROOT_ID, name, "text"), null);
+      if (name !== ".txt")
+        assert.equal(
+          state.createFile(DOCUMENTS_ID, name, "folder") !== null,
+          true,
+        );
+      assert.equal(
+        restoreSession({
+          files: state.files,
+          windows: [{ ...win, fileId: "unsupported" }],
+        }).windows.length,
+        0,
+      );
+    }
+    useOS.setState({ files: initialFiles, windows: [] });
+    useOS.getState().openApp("editor", "readme");
+    assert.equal(useOS.getState().windows.length, 1);
+    useOS.getState().openApp("editor");
+    assert.equal(useOS.getState().windows.length, 2);
+  } finally {
+    useOS.setState(previous);
+  }
 });
